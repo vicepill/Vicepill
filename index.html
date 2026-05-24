@@ -83,7 +83,6 @@
             cursor: pointer;
             box-shadow: inset 3px 3px 0 rgba(0, 255, 204, 0.15), inset -3px -3px 0 rgba(0, 0, 0, 0.7);
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
             transition: color 0.08s step-end, background 0.08s step-end, box-shadow 0.08s step-end, filter 0.08s step-end;
             user-select: none;
             -webkit-user-select: none;
@@ -99,63 +98,21 @@
             left: calc(var(--pixel-border-size) * -1);
             background: var(--pixel-cyan);
             clip-path: polygon(0px 8px, 4px 4px, 8px 0px, 228px 0px, 232px 4px, 236px 8px, 236px 64px, 232px 68px, 228px 72px, 8px 72px, 4px 68px, 0px 64px);
-            transition: background 0.08s step-end, filter 0.08s step-end;
-        }
-
-        #magitekButton::after {
-            content: '';
-            position: absolute;
-            z-index: 2;
-            pointer-events: none;
-            width: 4px;
-            height: 4px;
-            background: #ffffff;
-            opacity: 0.7;
-            top: -10px;
-            left: -10px;
-            box-shadow: 230px 0px 0 0 #ffffff, 0px 66px 0 0 #ffffff, 230px 66px 0 0 #ffffff;
-            transition: opacity 0.08s step-end;
         }
 
         #magitekButton:hover {
             color: #0d0d0d;
             background: var(--pixel-cyan);
-            box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.3), inset -3px -3px 0 rgba(0, 0, 0, 0.4), 0 0 18px var(--pixel-cyan), 0 0 40px var(--pixel-cyan-glow), 0 0 80px rgba(0, 255, 204, 0.25);
+            box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.3), inset -3px -3px 0 rgba(0, 0, 0, 0.4), 0 0 18px var(--pixel-cyan);
             filter: drop-shadow(0 0 10px var(--pixel-cyan));
-        }
-
-        #magitekButton:hover::before {
-            background: #0d0d0d;
-            filter: drop-shadow(0 0 6px var(--pixel-cyan));
-        }
-
-        #magitekButton:hover::after {
-            opacity: 0;
         }
 
         #magitekButton:active {
             transform: translate(-50%, -50%) scale(0.96);
-            box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.2), inset -1px -1px 0 rgba(0, 0, 0, 0.5), 0 0 8px var(--pixel-cyan);
-            transition: transform 0.04s step-end, box-shadow 0.04s step-end;
         }
 
         @media (max-width: 480px) {
-            #magitekButton {
-                width: 170px;
-                height: 44px;
-                font-size: 11px;
-                letter-spacing: 2px;
-            }
-            #magitekButton::before {
-                width: calc(170px + var(--pixel-border-size) * 2);
-                height: calc(44px + var(--pixel-border-size) * 2);
-                clip-path: polygon(0px 8px, 4px 4px, 8px 0px, 178px 0px, 182px 4px, 186px 8px, 186px 52px, 182px 56px, 178px 60px, 8px 60px, 4px 56px, 0px 52px);
-            }
-            #magitekButton::after {
-                top: -10px;
-                left: -10px;
-                box-shadow: 180px 0px 0 0 #ffffff, 0px 56px 0 0 #ffffff, 180px 56px 0 0 #ffffff;
-            }
+            #magitekButton { width: 170px; height: 44px; font-size: 11px; }
         }
     </style>
 </head>
@@ -196,14 +153,31 @@
                 btn.style.opacity = '0';
                 btn.style.transform = 'translate(-50%, -50%) scale(0.8)';
                 
-                setTimeout(() => {
-                    btn.style.display = 'none';
-                }, 350);
+                setTimeout(() => { btn.style.display = 'none'; }, 350);
 
                 audio.addEventListener("timeupdate", () => {
                     if (!audio.duration || audio.duration <= 0) return;
+
+                    const currentTime = audio.currentTime;
+                    const duration = audio.duration;
                     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                    const progress = audio.currentTime / audio.duration;
+
+                    const threshold = 630;       
+                    const speedMultiplier = 2.5; 
+
+                    let effectiveTime;
+                    let effectiveDuration;
+
+                    if (currentTime < threshold) {
+                        effectiveTime = currentTime;
+                    } else {
+                        effectiveTime = threshold + (currentTime - threshold) * speedMultiplier;
+                    }
+
+                    effectiveDuration = threshold + (duration - threshold) * speedMultiplier;
+
+                    const progress = effectiveTime / effectiveDuration;
+
                     window.scrollTo(0, maxScroll * (1 - progress));
                 });
 
