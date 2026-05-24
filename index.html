@@ -2,31 +2,33 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>MAGITEK - Pixel Edition</title>
+  <title>MAGITEK - Final Version</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
+    /* Rimosso lo scrolling visibile per un look full-screen */
     html, body {
       margin: 0;
       padding: 0;
       background: black;
-      /* Impedisce lo scroll manuale prima del click se preferisci */
-      overflow-x: hidden; 
+      overflow: hidden; /* Nasconde la barra di scorrimento */
+      height: 100%;
     }
 
     img {
       width: 100%;
       display: block;
-      image-rendering: pixelated; /* Mantiene l'immagine nitida se è pixel art */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
     }
 
-    /* IL BOTTONE PIXEL ART */
+    /* BOTTONE PIXEL ART */
     #magitekButton {
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       padding: 20px 40px;
-      font-size: 16px;
+      font-size: 18px;
       font-family: 'Press Start 2P', cursive;
       color: #00ffcc;
       background-color: #000;
@@ -35,20 +37,18 @@
       border: none;
       outline: none;
 
-      /* Effetto bordo a pixel (Double-Step) */
+      /* Bordo Pixel Art Professionale */
       box-shadow: 
-        /* Bordo Interno */
         -4px 0 0 0 #000,
         4px 0 0 0 #000,
         0 -4px 0 0 #000,
         0 4px 0 0 #000,
-        /* Bordo Esterno Colorato */
         -8px 0 0 0 #00ffcc,
         8px 0 0 0 #00ffcc,
         0 -8px 0 0 #00ffcc,
         0 8px 0 0 #00ffcc;
       
-      transition: all 0.1s;
+      transition: transform 0.1s;
     }
 
     #magitekButton:hover {
@@ -59,66 +59,72 @@
         4px 0 0 0 #000,
         0 -4px 0 0 #000,
         0 4px 0 0 #000,
-        -8px 0 0 0 #fff, /* Cambia colore al passaggio */
+        -8px 0 0 0 #fff,
         8px 0 0 0 #fff,
         0 -8px 0 0 #fff,
-        0 8px 0 0 #fff,
-        0 0 20px #00ffcc; /* Glow */
+        0 8px 0 0 #fff;
     }
 
     #magitekButton:active {
-      transform: translate(-50%, -46%); /* Simula la pressione */
+      transform: translate(-50%, -45%);
     }
-
   </style>
 </head>
 <body>
 
-  <button id="magitekButton">START MAGITEK</button>
+  <button id="magitekButton">ENGAGE MAGITEK</button>
 
   <audio id="audio" src="dancingmad.mp3"></audio>
-  
-  <img src="dancingmad.jpg" alt="Dancing Mad Artwork">
+  <img id="mainImg" src="dancingmad.jpg" alt="Dancing Mad">
 
   <script>
     const audio = document.getElementById("audio");
     const btn = document.getElementById("magitekButton");
+    const img = document.getElementById("mainImg");
 
-    // 1. Assicura che la pagina sia in cima al caricamento
-    window.onload = () => {
-        window.scrollTo(0, 0);
-    };
+    // Funzione per andare subito in fondo
+    function scrollToBottom() {
+      const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo(0, scrollMax);
+    }
+
+    // Forza il posizionamento in fondo all'avvio
+    // Usiamo sia load che un piccolo timeout per sicurezza con le immagini pesanti
+    window.addEventListener('load', scrollToBottom);
+    setTimeout(scrollToBottom, 100); 
 
     btn.onclick = async () => {
-      // Nasconde il bottone
       btn.style.display = "none";
 
       try {
         await audio.play();
       } catch (e) {
-        console.error("Interazione richiesta per l'audio");
+        console.log("Audio play preventivo fallito");
       }
 
-      // 2. Calcolo dello scroll: portiamo subito in fondo
-      const totalHeight = document.body.scrollHeight;
-      const viewportHeight = window.innerHeight;
-      const maxScroll = totalHeight - viewportHeight;
-
-      window.scrollTo(0, maxScroll);
-
-      // 3. Risalita dinamica basata sul tempo della musica
+      // La risalita avviene qui
       audio.addEventListener("timeupdate", () => {
         if (!audio.duration) return;
         
         const progress = audio.currentTime / audio.duration;
-        // Formula per risalire: maxScroll -> 0
-        const currentScroll = maxScroll * (1 - progress);
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
         
-        window.scrollTo({
-          top: currentScroll,
-          behavior: 'auto' // 'smooth' potrebbe laggare con timeupdate frequenti
-        });
+        // Risale verso lo 0 man mano che la musica avanza
+        const targetScroll = maxScroll * (1 - progress);
+        
+        window.scrollTo(0, targetScroll);
       });
+    };
+
+    // Previene che l'utente scrolli a mano rompendo l'effetto
+    window.onscroll = function() {
+      if (btn.style.display !== "none") {
+        // Se il bottone c'è ancora, rimaniamo in fondo
+        const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
+        if (window.scrollY < scrollMax) {
+          window.scrollTo(0, scrollMax);
+        }
+      }
     };
   </script>
 </body>
