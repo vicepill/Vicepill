@@ -4,16 +4,26 @@
   <meta charset="UTF-8">
   <title>MAGITEK</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+      width: 100%;
+      height: 100%;
       background: black;
+      overflow: hidden;
     }
+
+    #scroller {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
     img {
       width: 100%;
       display: block;
     }
+
     #magitekButton {
       position: fixed;
       top: 50%;
@@ -26,71 +36,62 @@
       text-transform: uppercase;
       color: #00ffcc;
       background: black;
-      border: none;
       cursor: pointer;
       z-index: 10;
+      border: none;
+      outline: none;
+
+      /* Bordo pixel art via border-image SVG */
+      border-image-source: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Crect x='0' y='0' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='4' y='0' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='8' y='0' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='0' y='4' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='4' y='4' width='4' height='4' fill='black'/%3E%3Crect x='8' y='4' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='0' y='8' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='4' y='8' width='4' height='4' fill='%2300ffcc'/%3E%3Crect x='8' y='8' width='4' height='4' fill='%2300ffcc'/%3E%3C/svg%3E");
+      border-image-slice: 4;
+      border-image-width: 8px;
+      border-image-repeat: round;
+      border-style: solid;
+      border-width: 8px;
+
       image-rendering: pixelated;
-      /* Bordo pixeloso con box-shadow a scalini */
-      box-shadow:
-        /* bordo esterno */
-        -4px -4px 0 0 #00ffcc,
-         4px -4px 0 0 #00ffcc,
-        -4px  4px 0 0 #00ffcc,
-         4px  4px 0 0 #00ffcc,
-        /* lati */
-        -4px  0   0 0 #00ffcc,
-         4px  0   0 0 #00ffcc,
-         0   -4px 0 0 #00ffcc,
-         0    4px 0 0 #00ffcc,
-        /* glow */
-        0 0 18px #00ffcc,
-        0 0 40px #00ffcc44;
+      box-shadow: 0 0 16px #00ffcc88, 0 0 40px #00ffcc33;
     }
 
     #magitekButton:hover {
       color: black;
       background: #00ffcc;
-      box-shadow:
-        -4px -4px 0 0 #00ffcc,
-         4px -4px 0 0 #00ffcc,
-        -4px  4px 0 0 #00ffcc,
-         4px  4px 0 0 #00ffcc,
-        -4px  0   0 0 #00ffcc,
-         4px  0   0 0 #00ffcc,
-         0   -4px 0 0 #00ffcc,
-         0    4px 0 0 #00ffcc,
-        0 0 24px #00ffcc,
-        0 0 60px #00ffcc88;
+      box-shadow: 0 0 24px #00ffcc, 0 0 60px #00ffcc88;
     }
   </style>
 </head>
 <body>
+  <div id="scroller">
+    <img src="dancingmad.jpg" alt="">
+  </div>
   <button id="magitekButton">MAGITEK</button>
   <audio id="audio" src="dancingmad.mp3"></audio>
-  <img src="dancingmad.jpg" alt="">
+
   <script>
     const audio = document.getElementById("audio");
     const btn = document.getElementById("magitekButton");
+    const scroller = document.getElementById("scroller");
 
-    // Parte dall'alto (in cima all'immagine) senza cliccare
-    window.scrollTo(0, 0);
+    // Parte sempre dall'alto
+    scroller.scrollTop = 0;
 
     btn.onclick = async () => {
       btn.style.display = "none";
+
       try {
         await audio.play();
       } catch (e) {
         alert("Audio bloccato dal browser");
       }
 
-      // Scroll parte dal basso e risale
-      window.scrollTo(0, document.body.scrollHeight);
+      // Vai al fondo, poi risali con la musica
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      scroller.scrollTop = maxScroll;
 
       audio.addEventListener("timeupdate", () => {
         if (!audio.duration) return;
         const progress = audio.currentTime / audio.duration;
-        const maxScroll = document.body.scrollHeight - window.innerHeight;
-        window.scrollTo(0, maxScroll * (1 - progress));
+        scroller.scrollTop = maxScroll * (1 - progress);
       });
     };
   </script>
