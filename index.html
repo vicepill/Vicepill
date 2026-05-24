@@ -1,131 +1,415 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>MAGITEK - Final Version</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <style>
-    /* Rimosso lo scrolling visibile per un look full-screen */
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: black;
-      overflow: hidden; /* Nasconde la barra di scorrimento */
-      height: 100%;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAGITEK</title>
 
-    img {
-      width: 100%;
-      display: block;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
+    <!-- Google Font: Press Start 2P — il font pixel art per eccellenza -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-    /* BOTTONE PIXEL ART */
-    #magitekButton {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 20px 40px;
-      font-size: 18px;
-      font-family: 'Press Start 2P', cursive;
-      color: #00ffcc;
-      background-color: #000;
-      cursor: pointer;
-      z-index: 100;
-      border: none;
-      outline: none;
+    <style>
+        :root {
+            --pixel-cyan: #00ffcc;
+            --pixel-cyan-glow: #00ffcc88;
+            --pixel-bg: #0a0a0a;
+            --pixel-border-size: 8px;
+            --pixel-step: 4px;
+        }
 
-      /* Bordo Pixel Art Professionale */
-      box-shadow: 
-        -4px 0 0 0 #000,
-        4px 0 0 0 #000,
-        0 -4px 0 0 #000,
-        0 4px 0 0 #000,
-        -8px 0 0 0 #00ffcc,
-        8px 0 0 0 #00ffcc,
-        0 -8px 0 0 #00ffcc,
-        0 8px 0 0 #00ffcc;
-      
-      transition: transform 0.1s;
-    }
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000000;
+            /* Scroll abilitato ma scrollbar nascosta */
+            overflow-y: scroll;
+            overflow-x: hidden;
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE/Edge */
+        }
 
-    #magitekButton:hover {
-      color: #000;
-      background-color: #00ffcc;
-      box-shadow: 
-        -4px 0 0 0 #000,
-        4px 0 0 0 #000,
-        0 -4px 0 0 #000,
-        0 4px 0 0 #000,
-        -8px 0 0 0 #fff,
-        8px 0 0 0 #fff,
-        0 -8px 0 0 #fff,
-        0 8px 0 0 #fff;
-    }
+        html::-webkit-scrollbar {
+            display: none;
+            /* Chrome/Safari/Opera */;
+        }
 
-    #magitekButton:active {
-      transform: translate(-50%, -45%);
-    }
-  </style>
+        body {
+            min-height: 100vh;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* Immagine a tutto schermo */
+        img {
+            width: 100%;
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* ──────────────────────────────────────
+         * OVERLAY CRT / SCANLINES (sottile)
+         * ────────────────────────────────────── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.06) 2px,
+                    rgba(0, 0, 0, 0.06) 4px);
+            opacity: 0.5;
+            animation: scanlineDrift 0.1s linear infinite;
+        }
+
+        @keyframes scanlineDrift {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 0 4px;
+            }
+        }
+
+        /* ──────────────────────────────────────
+         * PULSANTE PIXEL ART — MAGITEK
+         * ────────────────────────────────────── */
+        #magitekButton {
+            /* Posizionamento fisso al centro schermo */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+
+            /* Dimensioni esplicite (necessarie per il clip-path del bordo) */
+            width: 220px;
+            height: 56px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* Stile testo pixel */
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            font-size: 15px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--pixel-cyan);
+            background: #0d0d0d;
+            border: none;
+            cursor: pointer;
+
+            /* Inner bevel 3D (effetto pixel "premuto" all'interno) */
+            box-shadow:
+                inset 3px 3px 0 rgba(0, 255, 204, 0.15),
+                inset -3px -3px 0 rgba(0, 0, 0, 0.7);
+
+            /* Rendering pixelato */
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+
+            /* Transizione fluida per hover */
+            transition:
+                color 0.08s step-end,
+                background 0.08s step-end,
+                box-shadow 0.08s step-end,
+                filter 0.08s step-end;
+
+            /* Previene selezione testo */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ──────────────────────────────────────
+         * BORDO PIXEL ART CON STAIR-STEPS
+         * Usa ::before con clip-path a gradini
+         * ────────────────────────────────────── */
+        #magitekButton::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+
+            /* 8px più largo del bottone su ogni lato */
+            width: calc(100% + var(--pixel-border-size) * 2);
+            height: calc(100% + var(--pixel-border-size) * 2);
+            top: calc(var(--pixel-border-size) * -1);
+            left: calc(var(--pixel-border-size) * -1);
+
+            background: var(--pixel-cyan);
+
+            /*
+             * CLIP-PATH A GRADINI — crea il bordo pixel art
+             * Ogni angolo ha 2 scalini da 4px:
+             *
+             *   Top-left:     (0,8) → (4,4) → (8,0)
+             *   Top-right:    (W-8,0) → (W-4,4) → (W,8)
+             *   Bottom-right: (W,H-8) → (W-4,H-4) → (W-8,H)
+             *   Bottom-left:  (8,H) → (4,H-4) → (0,H-8)
+             *
+             * W = 236px, H = 72px  (220+16 × 56+16)
+             */
+            clip-path: polygon(0px 8px,
+                    4px 4px,
+                    8px 0px,
+                    228px 0px,
+                    232px 4px,
+                    236px 8px,
+                    236px 64px,
+                    232px 68px,
+                    228px 72px,
+                    8px 72px,
+                    4px 68px,
+                    0px 64px);
+
+            /* Transizione */
+            transition:
+                background 0.08s step-end,
+                filter 0.08s step-end;
+        }
+
+        /* ──────────────────────────────────────
+         * PUNTINI DECORATIVI AGLI ANGOLI
+         * (piccoli pixel "bulloni" sul bordo)
+         * ────────────────────────────────────── */
+        #magitekButton::after {
+            content: '';
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+
+            /* Quattro quadratini 4×4px agli angoli esterni del bordo */
+            width: 4px;
+            height: 4px;
+            background: #ffffff;
+            opacity: 0.7;
+            image-rendering: pixelated;
+
+            /* Posizionato in alto a sinistra, duplicato con box-shadow */
+            top: -10px;
+            left: -10px;
+
+            box-shadow:
+                /* Angolo top-right */
+                230px 0px 0 0 #ffffff,
+                /* Angolo bottom-left */
+                0px 66px 0 0 #ffffff,
+                /* Angolo bottom-right */
+                230px 66px 0 0 #ffffff;
+
+            transition: opacity 0.08s step-end;
+        }
+
+        /* ──────────────────────────────────────
+         * STATO HOVER — inversione colori + glow
+         * ────────────────────────────────────── */
+        #magitekButton:hover {
+            color: #0d0d0d;
+            background: var(--pixel-cyan);
+            box-shadow:
+                inset 3px 3px 0 rgba(255, 255, 255, 0.3),
+                inset -3px -3px 0 rgba(0, 0, 0, 0.4),
+                0 0 18px var(--pixel-cyan),
+                0 0 40px var(--pixel-cyan-glow),
+                0 0 80px rgba(0, 255, 204, 0.25);
+            filter: drop-shadow(0 0 10px var(--pixel-cyan));
+        }
+
+        #magitekButton:hover::before {
+            background: #0d0d0d;
+            filter: drop-shadow(0 0 6px var(--pixel-cyan));
+        }
+
+        #magitekButton:hover::after {
+            opacity: 0;
+        }
+
+        /* ──────────────────────────────────────
+         * STATO ACTIVE (click) — effetto "press"
+         * ────────────────────────────────────── */
+        #magitekButton:active {
+            transform: translate(-50%, -50%) scale(0.96);
+            box-shadow:
+                inset 1px 1px 0 rgba(255, 255, 255, 0.2),
+                inset -1px -1px 0 rgba(0, 0, 0, 0.5),
+                0 0 8px var(--pixel-cyan);
+            transition: transform 0.04s step-end, box-shadow 0.04s step-end;
+        }
+
+        #magitekButton:active::before {
+            clip-path: polygon(0px 8px,
+                    4px 4px,
+                    8px 0px,
+                    228px 0px,
+                    232px 4px,
+                    236px 8px,
+                    236px 64px,
+                    232px 68px,
+                    228px 72px,
+                    8px 72px,
+                    4px 68px,
+                    0px 64px);
+            /* Il bordo resta uguale ma il bottone si riduce — crea l'illusione che il bordo "sporga" */;
+        }
+
+        /* ──────────────────────────────────────
+         * RESPONSIVE: adatta su schermi piccoli
+         * ────────────────────────────────────── */
+        @media (max-width: 480px) {
+            #magitekButton {
+                width: 170px;
+                height: 44px;
+                font-size: 11px;
+                letter-spacing: 2px;
+            }
+
+            #magitekButton::before {
+                width: calc(170px + var(--pixel-border-size) * 2);
+                height: calc(44px + var(--pixel-border-size) * 2);
+                /* 186 × 60 */
+                clip-path: polygon(0px 8px,
+                        4px 4px,
+                        8px 0px,
+                        178px 0px,
+                        182px 4px,
+                        186px 8px,
+                        186px 52px,
+                        182px 56px,
+                        178px 60px,
+                        8px 60px,
+                        4px 56px,
+                        0px 52px);
+            }
+
+            #magitekButton::after {
+                top: -10px;
+                left: -10px;
+                box-shadow:
+                    180px 0px 0 0 #ffffff,
+                    0px 56px 0 0 #ffffff,
+                    180px 56px 0 0 #ffffff;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <button id="magitekButton">ENGAGE MAGITEK</button>
+    <!-- Pulsante Pixel Art -->
+    <button id="magitekButton" title=" Premi per avviare ">MAGITEK</button>
 
-  <audio id="audio" src="dancingmad.mp3"></audio>
-  <img id="mainImg" src="dancingmad.jpg" alt="Dancing Mad">
+    <!-- Audio nascosto -->
+    <audio id="audio" src="dancingmad.mp3" preload="auto"></audio>
 
-  <script>
-    const audio = document.getElementById("audio");
-    const btn = document.getElementById("magitekButton");
-    const img = document.getElementById("mainImg");
+    <!-- Immagine di sfondo -->
+    <img src="dancingmad.jpg" alt="Dancing Mad - Final Fantasy VI">
 
-    // Funzione per andare subito in fondo
-    function scrollToBottom() {
-      const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
-      window.scrollTo(0, scrollMax);
-    }
+    <script>
+        (function() {
+            const audio = document.getElementById("audio");
+            const btn = document.getElementById("magitekButton");
 
-    // Forza il posizionamento in fondo all'avvio
-    // Usiamo sia load che un piccolo timeout per sicurezza con le immagini pesanti
-    window.addEventListener('load', scrollToBottom);
-    setTimeout(scrollToBottom, 100); 
+            // ────────────────────────────────────
+            // PARTE SEMPRE DALLA CIMA DELLA PAGINA
+            // ────────────────────────────────────
+            window.scrollTo(0, 0);
 
-    btn.onclick = async () => {
-      btn.style.display = "none";
+            // Forza lo scroll in cima anche dopo caricamento immagini
+            window.addEventListener('load', () => {
+                window.scrollTo(0, 0);
+            });
 
-      try {
-        await audio.play();
-      } catch (e) {
-        console.log("Audio play preventivo fallito");
-      }
+            // ────────────────────────────────────
+            // CLICK SUL PULSANTE
+            // ────────────────────────────────────
+            btn.onclick = async () => {
+                // Cambia testo durante il loading
+                btn.textContent = '▶ PLAY';
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.7';
 
-      // La risalita avviene qui
-      audio.addEventListener("timeupdate", () => {
-        if (!audio.duration) return;
-        
-        const progress = audio.currentTime / audio.duration;
-        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-        
-        // Risale verso lo 0 man mano che la musica avanza
-        const targetScroll = maxScroll * (1 - progress);
-        
-        window.scrollTo(0, targetScroll);
-      });
-    };
+                try {
+                    await audio.play();
+                } catch (e) {
+                    alert("Audio bloccato dal browser. Clicca di nuovo per riprovare.");
+                    btn.textContent = 'MAGITEK';
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.opacity = '1';
+                    return;
+                }
 
-    // Previene che l'utente scrolli a mano rompendo l'effetto
-    window.onscroll = function() {
-      if (btn.style.display !== "none") {
-        // Se il bottone c'è ancora, rimaniamo in fondo
-        const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
-        if (window.scrollY < scrollMax) {
-          window.scrollTo(0, scrollMax);
-        }
-      }
-    };
-  </script>
+                // Audio partito: nascondi il pulsante con una piccola animazione
+                btn.style.transition = 'opacity 0.3s step-end, transform 0.3s step-end';
+                btn.style.opacity = '0';
+                btn.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                btn.style.pointerEvents = 'none';
+
+                // Dopo la transizione, rimuovi completamente
+                setTimeout(() => {
+                    btn.style.display = 'none';
+                }, 350);
+
+                // ────────────────────────────────────
+                // SCROLL: parte dal fondo e RISALE
+                // man mano che l'audio avanza
+                // ────────────────────────────────────
+                const maxScroll = document.body.scrollHeight - window.innerHeight;
+
+                // Vai subito in fondo (start dell'animazione scroll)
+                window.scrollTo(0, maxScroll);
+
+                // Aggiorna lo scroll in base al progresso dell'audio
+                audio.addEventListener("timeupdate", () => {
+                    if (!audio.duration || audio.duration <= 0) return;
+                    const progress = audio.currentTime / audio.duration;
+                    // progress = 0 → in fondo, progress = 1 → in cima
+                    window.scrollTo(0, maxScroll * (1 - progress));
+                });
+
+                // Quando l'audio finisce, torna in cima
+                audio.addEventListener("ended", () => {
+                    window.scrollTo(0, 0);
+                    // Ripristina il pulsante
+                    btn.style.display = 'flex';
+                    btn.style.opacity = '1';
+                    btn.style.transform = 'translate(-50%, -50%) scale(1)';
+                    btn.style.pointerEvents = 'auto';
+                    btn.textContent = 'MAGITEK';
+                    btn.style.transition =
+                        'opacity 0.3s step-end, transform 0.3s step-end, color 0.08s step-end, background 0.08s step-end, box-shadow 0.08s step-end, filter 0.08s step-end';
+                });
+
+                // Gestisce anche il caso in cui l'utente metta in pausa
+                audio.addEventListener("pause", () => {
+                    if (audio.currentTime >= audio.duration - 0.5) return;
+                    // Se in pausa prima della fine, lo scroll si ferma dov'è
+                });
+            };
+
+            // ────────────────────────────────────
+            // SUPPORTO TASTIERA (Enter / Space)
+            // ────────────────────────────────────
+            btn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    btn.click();
+                }
+            });
+
+            console.log('%c▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+                'color: #00ffcc; font-family: monospace; font-size: 14px;');
+            console.log('%c▓  MAGITEK  ▓  READY  ▓',
+                'color: #00ffcc; font-family: monospace; font-size: 14px;');
+            console.log('%c▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+                'color: #00ffcc; font-family: monospace; font-size: 14px;');
+            console.log('%c Premi il pulsante o premi Enter ',
+                'color: #ffffff; font-family: monospace; font-size: 11px;');
+        })();
+    </script>
 </body>
 </html>
