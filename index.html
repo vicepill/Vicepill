@@ -126,6 +126,7 @@
         (function() {
             const audio = document.getElementById("audio");
             const btn = document.getElementById("magitekButton");
+            let animationFrameId;
 
             const scrollToBottom = () => {
                 const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
@@ -134,6 +135,30 @@
 
             window.addEventListener('load', scrollToBottom);
             setTimeout(scrollToBottom, 100);
+
+            const updateScroll = () => {
+                if (audio.duration && audio.duration > 0 && !audio.paused) {
+                    const currentTime = audio.currentTime;
+                    const duration = audio.duration;
+                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+
+                    const threshold = 630;       
+                    const speedMultiplier = 4.0; 
+
+                    let effectiveTime;
+                    if (currentTime < threshold) {
+                        effectiveTime = currentTime;
+                    } else {
+                        effectiveTime = threshold + (currentTime - threshold) * speedMultiplier;
+                    }
+
+                    const effectiveDuration = threshold + (duration - threshold) * speedMultiplier;
+                    const progress = effectiveTime / effectiveDuration;
+
+                    window.scrollTo(0, maxScroll * (1 - progress));
+                }
+                animationFrameId = requestAnimationFrame(updateScroll);
+            };
 
             btn.onclick = async () => {
                 btn.textContent = '▶';
@@ -155,33 +180,10 @@
                 
                 setTimeout(() => { btn.style.display = 'none'; }, 350);
 
-                audio.addEventListener("timeupdate", () => {
-                    if (!audio.duration || audio.duration <= 0) return;
-
-                    const currentTime = audio.currentTime;
-                    const duration = audio.duration;
-                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-
-                    const threshold = 600;       
-                    const speedMultiplier = 4; 
-
-                    let effectiveTime;
-                    let effectiveDuration;
-
-                    if (currentTime < threshold) {
-                        effectiveTime = currentTime;
-                    } else {
-                        effectiveTime = threshold + (currentTime - threshold) * speedMultiplier;
-                    }
-
-                    effectiveDuration = threshold + (duration - threshold) * speedMultiplier;
-
-                    const progress = effectiveTime / effectiveDuration;
-
-                    window.scrollTo(0, maxScroll * (1 - progress));
-                });
+                animationFrameId = requestAnimationFrame(updateScroll);
 
                 audio.addEventListener("ended", () => {
+                    cancelAnimationFrame(animationFrameId);
                     window.scrollTo(0, 0);
                     btn.style.display = 'flex';
                     btn.style.opacity = '1';
