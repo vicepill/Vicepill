@@ -2,23 +2,45 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Fullscreen</title>
+  <title>Sync scroll audio</title>
+
   <style>
     body {
       margin: 0;
       background: black;
+      overflow-x: hidden;
     }
 
     img {
       width: 100%;
-      height: auto;
       display: block;
     }
   </style>
 </head>
 <body>
 
-  <img src="dancingmad.jpg" alt="">
+  <audio id="audio" src="dancingmad.mp3"></audio>
+
+  <img id="img" src="dancingmad.jpg" alt="">
+
+  <script>
+    const audio = document.getElementById("audio");
+
+    window.onload = () => {
+      audio.play();
+
+    
+      window.scrollTo(0, document.body.scrollHeight);
+    };
+
+    audio.ontimeupdate = () => {
+      const progress = audio.currentTime / audio.duration;
+
+      const maxScroll = document.body.scrollHeight - window.innerHeight;
+
+      window.scrollTo(0, maxScroll * (1 - progress));
+    };
+  </script>
 
 </body>
 </html>
