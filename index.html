@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>MAGITEK</title>
-
   <style>
     html, body {
       margin: 0;
@@ -11,12 +10,10 @@
       overflow: hidden;
       background: black;
     }
-
     img {
       width: 100%;
       display: block;
     }
-
     #magitekButton {
       position: fixed;
       top: 50%;
@@ -29,48 +26,73 @@
       text-transform: uppercase;
       color: #00ffcc;
       background: black;
-      border: 2px solid #00ffcc;
+      border: none;
       cursor: pointer;
       z-index: 10;
-      box-shadow: 0 0 12px #00ffcc;
+      image-rendering: pixelated;
+      /* Bordo pixeloso con box-shadow a scalini */
+      box-shadow:
+        /* bordo esterno */
+        -4px -4px 0 0 #00ffcc,
+         4px -4px 0 0 #00ffcc,
+        -4px  4px 0 0 #00ffcc,
+         4px  4px 0 0 #00ffcc,
+        /* lati */
+        -4px  0   0 0 #00ffcc,
+         4px  0   0 0 #00ffcc,
+         0   -4px 0 0 #00ffcc,
+         0    4px 0 0 #00ffcc,
+        /* glow */
+        0 0 18px #00ffcc,
+        0 0 40px #00ffcc44;
+    }
+
+    #magitekButton:hover {
+      color: black;
+      background: #00ffcc;
+      box-shadow:
+        -4px -4px 0 0 #00ffcc,
+         4px -4px 0 0 #00ffcc,
+        -4px  4px 0 0 #00ffcc,
+         4px  4px 0 0 #00ffcc,
+        -4px  0   0 0 #00ffcc,
+         4px  0   0 0 #00ffcc,
+         0   -4px 0 0 #00ffcc,
+         0    4px 0 0 #00ffcc,
+        0 0 24px #00ffcc,
+        0 0 60px #00ffcc88;
     }
   </style>
 </head>
 <body>
-
   <button id="magitekButton">MAGITEK</button>
-
   <audio id="audio" src="dancingmad.mp3"></audio>
-
   <img src="dancingmad.jpg" alt="">
-
   <script>
     const audio = document.getElementById("audio");
     const btn = document.getElementById("magitekButton");
 
+    // Parte dall'alto (in cima all'immagine) senza cliccare
+    window.scrollTo(0, 0);
+
     btn.onclick = async () => {
       btn.style.display = "none";
-
       try {
         await audio.play();
       } catch (e) {
         alert("Audio bloccato dal browser");
       }
 
-      // INIZIO DAL BASSO
+      // Scroll parte dal basso e risale
       window.scrollTo(0, document.body.scrollHeight);
 
       audio.addEventListener("timeupdate", () => {
         if (!audio.duration) return;
-
         const progress = audio.currentTime / audio.duration;
         const maxScroll = document.body.scrollHeight - window.innerHeight;
-
-        // DAL BASSO → VERSO L'ALTO
         window.scrollTo(0, maxScroll * (1 - progress));
       });
     };
   </script>
-
 </body>
 </html>
