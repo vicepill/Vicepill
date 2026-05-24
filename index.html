@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Sync</title>
+  <title>FFVI Sync</title>
 
   <style>
     html, body {
@@ -16,31 +16,56 @@
       width: 100%;
       display: block;
     }
+
+    #ffviButton {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 16px 28px;
+      font-size: 18px;
+      font-family: serif;
+      background: black;
+      color: white;
+      border: 2px solid white;
+      cursor: pointer;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
 
-  <audio id="audio" src="dancingmad.mp3" autoplay></audio>
+  <button id="ffviButton">FINAL FANTASY VI</button>
+
+  <audio id="audio" src="dancingmad.mp3"></audio>
 
   <img src="dancingmad.jpg" alt="">
 
   <script>
     const audio = document.getElementById("audio");
+    const btn = document.getElementById("ffviButton");
 
-    function syncScroll() {
-      if (!audio.duration) return;
+    btn.onclick = async () => {
+      btn.style.display = "none";
 
-      const progress = audio.currentTime / audio.duration;
-      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      try {
+        await audio.play();
+      } catch (e) {
+        alert("Audio bloccato dal browser. Premi di nuovo.");
+      }
 
-      window.scrollTo(0, maxScroll * (1 - progress));
-    }
-
-    audio.addEventListener("timeupdate", syncScroll);
-
-    audio.addEventListener("loadedmetadata", () => {
       window.scrollTo(0, document.body.scrollHeight);
-    });
+
+      audio.addEventListener("timeupdate", () => {
+        if (!audio.duration) return;
+
+        const progress = audio.currentTime / audio.duration;
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+
+        // SCROLL VERSO L'ALTO
+        window.scrollTo(0, maxScroll * progress);
+      });
+    };
   </script>
 
 </body>
