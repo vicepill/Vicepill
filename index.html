@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FFVI Sync</title>
+  <title>MAGITEK</title>
 
   <style>
     html, body {
@@ -17,25 +17,28 @@
       display: block;
     }
 
-    #ffviButton {
+    #magitekButton {
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      padding: 16px 28px;
-      font-size: 18px;
-      font-family: serif;
+      padding: 18px 34px;
+      font-size: 20px;
+      font-family: "Courier New", monospace;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #00ffcc;
       background: black;
-      color: white;
-      border: 2px solid white;
+      border: 2px solid #00ffcc;
       cursor: pointer;
       z-index: 10;
+      box-shadow: 0 0 12px #00ffcc;
     }
   </style>
 </head>
 <body>
 
-  <button id="ffviButton">FINAL FANTASY VI</button>
+  <button id="magitekButton">MAGITEK</button>
 
   <audio id="audio" src="dancingmad.mp3"></audio>
 
@@ -43,7 +46,7 @@
 
   <script>
     const audio = document.getElementById("audio");
-    const btn = document.getElementById("ffviButton");
+    const btn = document.getElementById("magitekButton");
 
     btn.onclick = async () => {
       btn.style.display = "none";
@@ -51,9 +54,10 @@
       try {
         await audio.play();
       } catch (e) {
-        alert("Audio bloccato dal browser. Premi di nuovo.");
+        alert("Audio bloccato dal browser");
       }
 
+      // INIZIO DAL BASSO
       window.scrollTo(0, document.body.scrollHeight);
 
       audio.addEventListener("timeupdate", () => {
@@ -62,8 +66,8 @@
         const progress = audio.currentTime / audio.duration;
         const maxScroll = document.body.scrollHeight - window.innerHeight;
 
-        // SCROLL VERSO L'ALTO
-        window.scrollTo(0, maxScroll * progress);
+        // DAL BASSO → VERSO L'ALTO
+        window.scrollTo(0, maxScroll * (1 - progress));
       });
     };
   </script>
