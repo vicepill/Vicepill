@@ -2,43 +2,69 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Sync scroll audio</title>
+  <title>Sync Audio Scroll</title>
 
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      overflow: hidden;
       background: black;
-      overflow-x: hidden;
     }
 
     img {
       width: 100%;
       display: block;
     }
+
+    #start {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
 
+  <button id="start">START</button>
+
   <audio id="audio" src="dancingmad.mp3"></audio>
 
-  <img id="img" src="dancingmad.jpg" alt="">
+  <img src="dancingmad.jpg" alt="">
 
   <script>
     const audio = document.getElementById("audio");
+    const btn = document.getElementById("start");
 
-    window.onload = () => {
-      audio.play();
+    btn.onclick = async () => {
+      btn.style.display = "none";
 
-    
+      try {
+        await audio.play();
+      } catch (e) {
+        alert("Errore audio: controlla il file mp3");
+      }
+
       window.scrollTo(0, document.body.scrollHeight);
-    };
 
-    audio.ontimeupdate = () => {
-      const progress = audio.currentTime / audio.duration;
+      window.addEventListener("scroll", () => {
+        // blocca scroll manuale
+        window.scrollTo(0, document.body.scrollHeight);
+      });
 
-      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      audio.ontimeupdate = () => {
+        if (!audio.duration) return;
 
-      window.scrollTo(0, maxScroll * (1 - progress));
+        const progress = audio.currentTime / audio.duration;
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+
+        window.scrollTo(0, maxScroll * (1 - progress));
+      };
     };
   </script>
 
