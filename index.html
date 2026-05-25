@@ -61,6 +61,7 @@
             100% { background-position: 0 4px; }
         }
 
+        
         #magitekButton {
             position: fixed;
             top: 50%;
@@ -111,23 +112,130 @@
             transform: translate(-50%, -50%) scale(0.96);
         }
 
+        
+        #infoButton {
+            position: fixed;
+            top: 20px;
+            right: 24px;
+            z-index: 1000;
+            width: 80px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--pixel-cyan);
+            background: #0d0d0d;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            box-shadow: inset 2px 2px 0 rgba(0, 255, 204, 0.15), inset -2px -2px 0 rgba(0, 0, 0, 0.7);
+            transition: color 0.08s step-end, background 0.08s step-end, box-shadow 0.08s step-end, filter 0.08s step-end;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #infoButton::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            width: calc(100% + 6px);
+            height: calc(100% + 6px);
+            top: -3px;
+            left: -3px;
+            background: var(--pixel-cyan);
+            clip-path: polygon(0px 4px, 4px 0px, 82px 0px, 86px 4px, 86px 34px, 82px 38px, 4px 38px, 0px 34px);
+        }
+
+        #infoButton:hover {
+            color: #0d0d0d;
+            background: var(--pixel-cyan);
+            box-shadow: inset 2px 2px 0 rgba(255,255,255,0.3), inset -2px -2px 0 rgba(0,0,0,0.4), 0 0 12px var(--pixel-cyan);
+            filter: drop-shadow(0 0 6px var(--pixel-cyan));
+        }
+
+        #infoButton:active {
+            transform: scale(0.95);
+        }
+
+        
+        #infoOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: #000000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #infoOverlay.visible {
+            display: flex;
+        }
+
+        #infoOverlay p {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: clamp(18px, 3vw, 30px);
+            color: #ffffff;
+            margin: 0;
+            letter-spacing: 0.04em;
+            text-align: center;
+        }
+
+        #closeInfo {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 32px;
+            line-height: 1;
+            color: #ffffff;
+            background: transparent;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.15s;
+        }
+
+        #closeInfo:hover {
+            opacity: 1;
+        }
+
         @media (max-width: 480px) {
             #magitekButton { width: 170px; height: 44px; font-size: 11px; }
+            #infoButton { width: 64px; height: 28px; font-size: 7px; right: 14px; top: 14px; }
         }
     </style>
 </head>
 <body>
 
-    <button id="magitekButton" title=" Premi per avviare ">MAGITEK</button>
+    <button id="magitekButton" title="Premi per avviare">MAGITEK</button>
+    <button id="infoButton" title="Info">INFO</button>
+
     <audio id="audio" src="dancingmad.mp3" preload="auto"></audio>
     <img src="dancingmad.jpg" alt="Dancing Mad - Final Fantasy VI">
 
+    
+    <div id="infoOverlay" role="dialog" aria-modal="true" aria-label="Info">
+        <button id="closeInfo" aria-label="Chiudi">✕</button>
+        <p>da mihi mortem iterum</p>
+    </div>
+
     <script>
-        (function() {
+        (function () {
             const audio = document.getElementById("audio");
             const btn = document.getElementById("magitekButton");
+            const infoBtn = document.getElementById("infoButton");
+            const infoOverlay = document.getElementById("infoOverlay");
+            const closeInfo = document.getElementById("closeInfo");
             let animationFrameId;
 
+            /* ── scroll logic ── */
             const scrollToBottom = () => {
                 const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
                 window.scrollTo(0, maxScroll);
@@ -141,30 +249,26 @@
                     const currentTime = audio.currentTime;
                     const duration = audio.duration;
                     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-
-                    const threshold = 630;       
-                    const speedMultiplier = 4.0; 
-
+                    const threshold = 630;
+                    const speedMultiplier = 4.0;
                     let effectiveTime;
                     if (currentTime < threshold) {
                         effectiveTime = currentTime;
                     } else {
                         effectiveTime = threshold + (currentTime - threshold) * speedMultiplier;
                     }
-
                     const effectiveDuration = threshold + (duration - threshold) * speedMultiplier;
                     const progress = effectiveTime / effectiveDuration;
-
                     window.scrollTo(0, maxScroll * (1 - progress));
                 }
                 animationFrameId = requestAnimationFrame(updateScroll);
             };
 
+            //mgtk
             btn.onclick = async () => {
                 btn.textContent = '▶';
                 btn.style.pointerEvents = 'none';
                 btn.style.opacity = '0.7';
-
                 try {
                     await audio.play();
                 } catch (e) {
@@ -173,15 +277,11 @@
                     btn.style.opacity = '1';
                     return;
                 }
-
                 btn.style.transition = 'opacity 0.3s step-end, transform 0.3s step-end';
                 btn.style.opacity = '0';
                 btn.style.transform = 'translate(-50%, -50%) scale(0.8)';
-                
                 setTimeout(() => { btn.style.display = 'none'; }, 350);
-
                 animationFrameId = requestAnimationFrame(updateScroll);
-
                 audio.addEventListener("ended", () => {
                     cancelAnimationFrame(animationFrameId);
                     window.scrollTo(0, 0);
@@ -194,10 +294,20 @@
             };
 
             btn.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    btn.click();
-                }
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+            });
+
+            //INFO
+            infoBtn.addEventListener('click', () => {
+                infoOverlay.classList.add('visible');
+            });
+
+            closeInfo.addEventListener('click', () => {
+                infoOverlay.classList.remove('visible');
+            });
+
+            infoOverlay.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') infoOverlay.classList.remove('visible');
             });
         })();
     </script>
