@@ -1,315 +1,294 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAGITEK</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --pixel-cyan: #00ffcc;
-            --pixel-cyan-glow: #00ffcc88;
-            --pixel-bg: #0a0a0a;
-            --pixel-border-size: 8px;
-            --pixel-step: 4px;
-        }
+  <meta charset="UTF-8">
+  <title>MAGITEK</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+    }
+    #scroller {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    img {
+      width: 100%;
+      display: block;
+    }
+    #magitekButton {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      background: transparent;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    #magitekButton svg {
+      display: block;
+      image-rendering: pixelated;
+      filter:
+        drop-shadow(0 0 6px rgba(255,255,255,0.6))
+        drop-shadow(0 0 18px rgba(255,255,255,0.25))
+        drop-shadow(0 0 40px rgba(180,180,255,0.15));
+      transition: filter 0.15s;
+    }
+    #magitekButton:hover svg {
+      filter:
+        drop-shadow(0 0 10px rgba(255,255,255,0.95))
+        drop-shadow(0 0 28px rgba(255,255,255,0.5))
+        drop-shadow(0 0 60px rgba(180,180,255,0.35));
+    }
+    @keyframes flicker {
+      0%,100% { opacity: 1; }
+      92%      { opacity: 1; }
+      93%      { opacity: 0.4; }
+      94%      { opacity: 1; }
+      97%      { opacity: 1; }
+      98%      { opacity: 0.2; }
+      99%      { opacity: 1; }
+    }
+    @keyframes cursor-blink {
+      0%,49%   { opacity: 1; }
+      50%,100% { opacity: 0; }
+    }
+    #btn-label {
+      animation: flicker 4s infinite;
+    }
+    #btn-cursor {
+      animation: cursor-blink 0.9s infinite;
+    }
+    #magitekButton::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.18) 3px,
+        rgba(0,0,0,0.18) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: #000000;
-            overflow-y: scroll;
-            overflow-x: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
+    #infoButton {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10;
+      background: transparent;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    #infoButton svg {
+      display: block;
+      image-rendering: pixelated;
+      filter:
+        drop-shadow(0 0 4px rgba(255,255,255,0.5))
+        drop-shadow(0 0 12px rgba(255,255,255,0.2));
+      transition: filter 0.15s;
+    }
+    #infoButton:hover svg {
+      filter:
+        drop-shadow(0 0 8px rgba(255,255,255,0.95))
+        drop-shadow(0 0 22px rgba(255,255,255,0.4));
+    }
 
-        html::-webkit-scrollbar {
-            display: none;
-        }
-
-        body {
-            min-height: 100vh;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-
-        img {
-            width: 100%;
-            display: block;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 999;
-            background: repeating-linear-gradient(0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0, 0, 0, 0.06) 2px,
-                    rgba(0, 0, 0, 0.06) 4px);
-            opacity: 0.5;
-            animation: scanlineDrift 0.1s linear infinite;
-        }
-
-        @keyframes scanlineDrift {
-            0% { background-position: 0 0; }
-            100% { background-position: 0 4px; }
-        }
-
-        
-        #magitekButton {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            width: 220px;
-            height: 56px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Press Start 2P', 'Courier New', monospace;
-            font-size: 15px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--pixel-cyan);
-            background: #0d0d0d;
-            border: none;
-            cursor: pointer;
-            box-shadow: inset 3px 3px 0 rgba(0, 255, 204, 0.15), inset -3px -3px 0 rgba(0, 0, 0, 0.7);
-            image-rendering: pixelated;
-            transition: color 0.08s step-end, background 0.08s step-end, box-shadow 0.08s step-end, filter 0.08s step-end;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        #magitekButton::before {
-            content: '';
-            position: absolute;
-            z-index: -1;
-            width: calc(100% + var(--pixel-border-size) * 2);
-            height: calc(100% + var(--pixel-border-size) * 2);
-            top: calc(var(--pixel-border-size) * -1);
-            left: calc(var(--pixel-border-size) * -1);
-            background: var(--pixel-cyan);
-            clip-path: polygon(0px 8px, 4px 4px, 8px 0px, 228px 0px, 232px 4px, 236px 8px, 236px 64px, 232px 68px, 228px 72px, 8px 72px, 4px 68px, 0px 64px);
-        }
-
-        #magitekButton:hover {
-            color: #0d0d0d;
-            background: var(--pixel-cyan);
-            box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.3), inset -3px -3px 0 rgba(0, 0, 0, 0.4), 0 0 18px var(--pixel-cyan);
-            filter: drop-shadow(0 0 10px var(--pixel-cyan));
-        }
-
-        #magitekButton:active {
-            transform: translate(-50%, -50%) scale(0.96);
-        }
-
-        
-        #infoButton {
-            position: fixed;
-            top: 20px;
-            right: 24px;
-            z-index: 1000;
-            width: 80px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Press Start 2P', 'Courier New', monospace;
-            font-size: 9px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--pixel-cyan);
-            background: #0d0d0d;
-            border: none;
-            cursor: pointer;
-            outline: none;
-            box-shadow: inset 2px 2px 0 rgba(0, 255, 204, 0.15), inset -2px -2px 0 rgba(0, 0, 0, 0.7);
-            transition: color 0.08s step-end, background 0.08s step-end, box-shadow 0.08s step-end, filter 0.08s step-end;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        #infoButton::before {
-            content: '';
-            position: absolute;
-            z-index: -1;
-            width: calc(100% + 6px);
-            height: calc(100% + 6px);
-            top: -3px;
-            left: -3px;
-            background: var(--pixel-cyan);
-            clip-path: polygon(0px 4px, 4px 0px, 82px 0px, 86px 4px, 86px 34px, 82px 38px, 4px 38px, 0px 34px);
-        }
-
-        #infoButton:hover {
-            color: #0d0d0d;
-            background: var(--pixel-cyan);
-            box-shadow: inset 2px 2px 0 rgba(255,255,255,0.3), inset -2px -2px 0 rgba(0,0,0,0.4), 0 0 12px var(--pixel-cyan);
-            filter: drop-shadow(0 0 6px var(--pixel-cyan));
-        }
-
-        #infoButton:active {
-            transform: scale(0.95);
-        }
-
-        
-        #infoOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 5000;
-            background: #000000;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        #infoOverlay.visible {
-            display: flex;
-        }
-
-        #infoOverlay p {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: clamp(18px, 3vw, 30px);
-            color: #ffffff;
-            margin: 0;
-            letter-spacing: 0.04em;
-            text-align: center;
-        }
-
-        #closeInfo {
-            position: absolute;
-            top: 20px;
-            right: 24px;
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 32px;
-            line-height: 1;
-            color: #ffffff;
-            background: transparent;
-            border: none;
-            padding: 0;
-            cursor: pointer;
-            opacity: 0.6;
-            transition: opacity 0.15s;
-        }
-
-        #closeInfo:hover {
-            opacity: 1;
-        }
-
-        @media (max-width: 480px) {
-            #magitekButton { width: 170px; height: 44px; font-size: 11px; }
-            #infoButton { width: 64px; height: 28px; font-size: 7px; right: 14px; top: 14px; }
-        }
-    </style>
+    #infoPanel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: black;
+      align-items: center;
+      justify-content: center;
+    }
+    #infoPanel.open {
+      display: flex;
+    }
+    #infoPanel p {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: clamp(18px, 3vw, 28px);
+      color: white;
+      font-style: italic;
+      letter-spacing: 0.04em;
+      text-align: center;
+      user-select: none;
+    }
+    #closeBtn {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      background: transparent;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 28px;
+      color: white;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+    #closeBtn:hover {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body>
+  <div id="scroller">
+    <img src="dancingmad.jpg" alt="">
+  </div>
 
-    <button id="magitekButton" title="Premi per avviare">MAGITEK</button>
-    <button id="infoButton" title="Info">INFO</button>
+  <button id="magitekButton" aria-label="MAGITEK">
+    <svg
+      width="240" height="80"
+      viewBox="0 0 240 80"
+      xmlns="http://www.w3.org/2000/svg"
+      shape-rendering="crispEdges"
+    >
+      <rect x="8" y="8" width="224" height="64" fill="rgba(0,0,0,0.82)"/>
+      <g fill="#cccccc">
+        <rect x="16" y="0"   width="208" height="4"/>
+        <rect x="16" y="76"  width="208" height="4"/>
+        <rect x="0"  y="16"  width="4"   height="48"/>
+        <rect x="236" y="16" width="4"   height="48"/>
+        <rect x="8"  y="0"   width="8"   height="4"/>
+        <rect x="0"  y="8"   width="4"   height="8"/>
+        <rect x="4"  y="4"   width="4"   height="4"/>
+        <rect x="224" y="0"  width="8"   height="4"/>
+        <rect x="236" y="8"  width="4"   height="8"/>
+        <rect x="232" y="4"  width="4"   height="4"/>
+        <rect x="8"  y="76"  width="8"   height="4"/>
+        <rect x="0"  y="64"  width="4"   height="8"/>
+        <rect x="4"  y="72"  width="4"   height="4"/>
+        <rect x="224" y="76" width="8"   height="4"/>
+        <rect x="236" y="64" width="4"   height="8"/>
+        <rect x="232" y="72" width="4"   height="4"/>
+      </g>
+      <g fill="#444444">
+        <rect x="8"   y="8"  width="224" height="2"/>
+        <rect x="8"   y="70" width="224" height="2"/>
+        <rect x="8"   y="8"  width="2"   height="64"/>
+        <rect x="230" y="8"  width="2"   height="64"/>
+      </g>
+      <g fill="#eeeeee" opacity="0.15">
+        <rect x="10" y="10" width="220" height="1"/>
+        <rect x="10" y="10" width="1"   height="60"/>
+      </g>
+      <g fill="#888888">
+        <rect x="12"  y="12" width="4" height="4"/>
+        <rect x="224" y="12" width="4" height="4"/>
+        <rect x="12"  y="64" width="4" height="4"/>
+        <rect x="224" y="64" width="4" height="4"/>
+      </g>
+      <g fill="#666666">
+        <rect x="108" y="2"  width="24" height="2"/>
+        <rect x="108" y="76" width="24" height="2"/>
+      </g>
+      <g id="btn-label">
+        <text
+          x="120" y="46"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-family="'Courier New', monospace"
+          font-size="18"
+          letter-spacing="8"
+          fill="#ffffff"
+          font-weight="bold"
+        >MAGITEK</text>
+      </g>
+      <rect id="btn-cursor" x="208" y="33" width="4" height="14" fill="#ffffff" opacity="0.7"/>
+      <g fill="#aaaaaa">
+        <rect x="18" y="36" width="4" height="4"/>
+        <rect x="22" y="32" width="4" height="4"/>
+        <rect x="22" y="40" width="4" height="4"/>
+        <rect x="26" y="28" width="4" height="4"/>
+        <rect x="26" y="44" width="4" height="4"/>
+      </g>
+    </svg>
+  </button>
 
-    <audio id="audio" src="dancingmad.mp3" preload="auto"></audio>
-    <img src="dancingmad.jpg" alt="Dancing Mad - Final Fantasy VI">
+  <button id="infoButton" aria-label="Info">
+    <svg
+      width="40" height="40"
+      viewBox="0 0 40 40"
+      xmlns="http://www.w3.org/2000/svg"
+      shape-rendering="crispEdges"
+    >
+      <rect x="4" y="4" width="32" height="32" fill="rgba(0,0,0,0.82)"/>
+      <g fill="#cccccc">
+        <rect x="8"  y="0"  width="24" height="4"/>
+        <rect x="8"  y="36" width="24" height="4"/>
+        <rect x="0"  y="8"  width="4"  height="24"/>
+        <rect x="36" y="8"  width="4"  height="24"/>
+        <rect x="4"  y="4"  width="4"  height="4"/>
+        <rect x="32" y="4"  width="4"  height="4"/>
+        <rect x="4"  y="32" width="4"  height="4"/>
+        <rect x="32" y="32" width="4"  height="4"/>
+      </g>
+      <g fill="#444444">
+        <rect x="4"  y="4"  width="32" height="2"/>
+        <rect x="4"  y="34" width="32" height="2"/>
+        <rect x="4"  y="4"  width="2"  height="32"/>
+        <rect x="34" y="4"  width="2"  height="32"/>
+      </g>
+      <text
+        x="20" y="22"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        font-family="'Times New Roman', serif"
+        font-size="18"
+        fill="#ffffff"
+        font-style="italic"
+      >i</text>
+    </svg>
+  </button>
 
-    
-    <div id="infoOverlay" role="dialog" aria-modal="true" aria-label="Info">
-        <button id="closeInfo" aria-label="Chiudi">✕</button>
-        <p>da mihi mortem iterum</p>
-    </div>
+  <div id="infoPanel">
+    <button id="closeBtn">&#x2715;</button>
+    <p>da mihi mortem iterum</p>
+  </div>
 
-    <script>
-        (function () {
-            const audio = document.getElementById("audio");
-            const btn = document.getElementById("magitekButton");
-            const infoBtn = document.getElementById("infoButton");
-            const infoOverlay = document.getElementById("infoOverlay");
-            const closeInfo = document.getElementById("closeInfo");
-            let animationFrameId;
+  <audio id="audio" src="dancingmad.mp3"></audio>
 
-            /* ── scroll logic ── */
-            const scrollToBottom = () => {
-                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                window.scrollTo(0, maxScroll);
-            };
+  <script>
+    const audio    = document.getElementById("audio");
+    const btn      = document.getElementById("magitekButton");
+    const scroller = document.getElementById("scroller");
+    const infoBtn  = document.getElementById("infoButton");
+    const infoPanel = document.getElementById("infoPanel");
+    const closeBtn = document.getElementById("closeBtn");
 
-            window.addEventListener('load', scrollToBottom);
-            setTimeout(scrollToBottom, 100);
+    scroller.scrollTop = 0;
 
-            const updateScroll = () => {
-                if (audio.duration && audio.duration > 0 && !audio.paused) {
-                    const currentTime = audio.currentTime;
-                    const duration = audio.duration;
-                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                    const threshold = 630;
-                    const speedMultiplier = 4.0;
-                    let effectiveTime;
-                    if (currentTime < threshold) {
-                        effectiveTime = currentTime;
-                    } else {
-                        effectiveTime = threshold + (currentTime - threshold) * speedMultiplier;
-                    }
-                    const effectiveDuration = threshold + (duration - threshold) * speedMultiplier;
-                    const progress = effectiveTime / effectiveDuration;
-                    window.scrollTo(0, maxScroll * (1 - progress));
-                }
-                animationFrameId = requestAnimationFrame(updateScroll);
-            };
+    btn.onclick = async () => {
+      btn.style.display = "none";
+      try { await audio.play(); }
+      catch (e) { alert("Audio bloccato dal browser"); }
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      scroller.scrollTop = maxScroll;
+      audio.addEventListener("timeupdate", () => {
+        if (!audio.duration) return;
+        const progress = audio.currentTime / audio.duration;
+        scroller.scrollTop = maxScroll * (1 - progress);
+      });
+    };
 
-            //mgtk
-            btn.onclick = async () => {
-                btn.textContent = '▶';
-                btn.style.pointerEvents = 'none';
-                btn.style.opacity = '0.7';
-                try {
-                    await audio.play();
-                } catch (e) {
-                    btn.textContent = 'MAGITEK';
-                    btn.style.pointerEvents = 'auto';
-                    btn.style.opacity = '1';
-                    return;
-                }
-                btn.style.transition = 'opacity 0.3s step-end, transform 0.3s step-end';
-                btn.style.opacity = '0';
-                btn.style.transform = 'translate(-50%, -50%) scale(0.8)';
-                setTimeout(() => { btn.style.display = 'none'; }, 350);
-                animationFrameId = requestAnimationFrame(updateScroll);
-                audio.addEventListener("ended", () => {
-                    cancelAnimationFrame(animationFrameId);
-                    window.scrollTo(0, 0);
-                    btn.style.display = 'flex';
-                    btn.style.opacity = '1';
-                    btn.style.transform = 'translate(-50%, -50%) scale(1)';
-                    btn.style.pointerEvents = 'auto';
-                    btn.textContent = 'MAGITEK';
-                });
-            };
-
-            btn.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
-            });
-
-            //INFO
-            infoBtn.addEventListener('click', () => {
-                infoOverlay.classList.add('visible');
-            });
-
-            closeInfo.addEventListener('click', () => {
-                infoOverlay.classList.remove('visible');
-            });
-
-            infoOverlay.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') infoOverlay.classList.remove('visible');
-            });
-        })();
-    </script>
+    infoBtn.onclick = () => infoPanel.classList.add("open");
+    closeBtn.onclick = () => infoPanel.classList.remove("open");
+  </script>
 </body>
 </html>
