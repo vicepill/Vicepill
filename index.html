@@ -20,6 +20,20 @@
       width: 100%;
       display: block;
     }
+    #vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0.5) 50%,
+        rgba(0,0,0,0.92) 80%,
+        rgba(0,0,0,1) 100%
+      );
+      opacity: 1;
+      transition: opacity 0.08s linear;
+    }
     #magitekButton {
       position: fixed;
       top: 50%;
@@ -80,7 +94,6 @@
       pointer-events: none;
       z-index: 1;
     }
-
     #infoButton {
       position: fixed;
       bottom: 24px;
@@ -105,7 +118,6 @@
         drop-shadow(0 0 8px rgba(255,255,255,0.95))
         drop-shadow(0 0 22px rgba(255,255,255,0.4));
     }
-
     #infoPanel {
       display: none;
       position: fixed;
@@ -151,6 +163,8 @@
   <div id="scroller">
     <img src="dancingmad.jpg" alt="">
   </div>
+
+  <div id="vignette"></div>
 
   <button id="magitekButton" aria-label="MAGITEK">
     <svg
@@ -265,29 +279,51 @@
   <audio id="audio" src="dancingmad.mp3"></audio>
 
   <script>
-    const audio    = document.getElementById("audio");
-    const btn      = document.getElementById("magitekButton");
-    const scroller = document.getElementById("scroller");
-    const infoBtn  = document.getElementById("infoButton");
+    const audio     = document.getElementById("audio");
+    const btn       = document.getElementById("magitekButton");
+    const scroller  = document.getElementById("scroller");
+    const infoBtn   = document.getElementById("infoButton");
     const infoPanel = document.getElementById("infoPanel");
-    const closeBtn = document.getElementById("closeBtn");
+    const closeBtn  = document.getElementById("closeBtn");
+    const vignette  = document.getElementById("vignette");
+
+    const TOTAL     = 18 * 60;
+    const SLOW_END  = 10 * 60 + 50;
+    const FAST_END  = TOTAL;
 
     scroller.scrollTop = 0;
+
+    function updateVignette(t) {
+      let opacity;
+      if (t <= SLOW_END) {
+        const slowProgress = t / SLOW_END;
+        opacity = 1 - (slowProgress * 0.35);
+      } else {
+        const fastProgress = (t - SLOW_END) / (FAST_END - SLOW_END);
+        const eased = 1 - Math.pow(1 - fastProgress, 2);
+        opacity = 0.65 - (eased * 0.65);
+      }
+      vignette.style.opacity = Math.max(0, opacity);
+    }
 
     btn.onclick = async () => {
       btn.style.display = "none";
       try { await audio.play(); }
       catch (e) { alert("Audio bloccato dal browser"); }
+
       const maxScroll = scroller.scrollHeight - scroller.clientHeight;
       scroller.scrollTop = maxScroll;
+
       audio.addEventListener("timeupdate", () => {
         if (!audio.duration) return;
-        const progress = audio.currentTime / audio.duration;
+        const t = audio.currentTime;
+        const progress = t / audio.duration;
         scroller.scrollTop = maxScroll * (1 - progress);
+        updateVignette(t);
       });
     };
 
-    infoBtn.onclick = () => infoPanel.classList.add("open");
+    infoBtn.onclick  = () => infoPanel.classList.add("open");
     closeBtn.onclick = () => infoPanel.classList.remove("open");
   </script>
 </body>
