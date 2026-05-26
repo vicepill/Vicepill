@@ -339,6 +339,9 @@
     let BOSS_MAXHP = 350;
     let BOSS_MAXHP2 = 500;
 
+    // Global Screen Shake
+    let screenShake = 0;
+
     function updateVignette(t) {
       let opacity;
       if (t <= SLOW_END) {
@@ -389,6 +392,7 @@
     const C = { lightest: '#9bbc0f', light: '#8bac0f', dark: '#306230', darkest: '#0f380f' };
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
+    
     function playSfx(freq, type, dur, vol=0.1) {
       if (!audioCtx) audioCtx = new AudioContext();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -396,7 +400,8 @@
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(freq*0.5, audioCtx.currentTime + dur);
+      // Fast drop to 10% frequency creates a sharp, physical "thwack" or "swish" effect
+      osc.frequency.exponentialRampToValueAtTime(freq*0.1, audioCtx.currentTime + dur);
       gain.gain.setValueAtTime(vol, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
       osc.connect(gain);
@@ -462,7 +467,7 @@
       x: W/2, y: H-28, w:10, h:16, hp: 150, maxHp:150, mp: 100, maxMp:100, speed: 110,
       attacking: false, attackTimer:0, attackCooldown:0, invincible: false, invTimer:0,
       slashTrail: [], limitBreak: false, limitGauge:0, dead: false,
-      slashFx: { active: false, timer: 0 } // Tracks if hero is being slashed visually
+      slashFx: { active: false, timer: 0 }
     };
 
     function drawHero() {
@@ -499,20 +504,27 @@
         hero.slashTrail.forEach(s => { ctx.globalAlpha=s.a; fr(s.x,s.y,s.w,s.h,C.lightest); ctx.globalAlpha=1; });
       }
 
-      // Draw Player Damage Slash FX
+      // Vicious Multi-Slash Damage Effect over Hero
       if (hero.slashFx && hero.slashFx.active) {
+        const prog = hero.slashFx.timer / 0.3; 
         ctx.save();
         ctx.translate(x, hy - 10);
-        const prog = hero.slashFx.timer / 0.25; 
-        ctx.globalAlpha = prog;
         
-        ctx.rotate(Math.PI / 4);
-        fr(-15, -2, 30, 4, C.lightest);
-        fr(-15, -1, 30, 2, C.darkest);
+        ctx.beginPath();
+        // Slash 1
+        ctx.moveTo(-25, -25); ctx.lineTo(25, 25);
+        // Slash 2
+        ctx.moveTo(25, -25); ctx.lineTo(-25, 25);
+        // Slash 3
+        ctx.moveTo(-30, 0); ctx.lineTo(30, 0);
         
-        ctx.rotate(-Math.PI / 2);
-        fr(-15, -2, 30, 4, C.lightest);
-        fr(-15, -1, 30, 2, C.darkest);
+        ctx.strokeStyle = C.lightest; 
+        ctx.lineWidth = 4 * prog;
+        ctx.stroke();
+        
+        ctx.strokeStyle = C.darkest;
+        ctx.lineWidth = 2 * prog;
+        ctx.stroke();
         
         ctx.restore();
       }
@@ -521,7 +533,8 @@
     const boss = {
       x: W/2, y: 65, hp: BOSS_MAXHP, maxHp: BOSS_MAXHP, phase: 1, state: 'idle', stateTimer: 0, actionTimer: 1.5, dead: false,
       wingSpan: 0, wingAngle: 0, beamX: 0, beamActive: false, meteorList: [], flareList: [], masamuneAngle: 0, masamuneActive: false,
-      slashX: W/2, slashDir: 1, invincible: false, phase2Transition: false, novaTimer: 0, novaActive: false, floatY: 0, octaCount: 0
+      slashX: W/2, slashDir: 1, invincible: false, phase2Transition: false, novaTimer: 0, novaActive: false, floatY: 0, octaCount: 0,
+      octaLines: []
     };
 
     function drawBoss() {
@@ -588,7 +601,9 @@
           boss.meteorList.push({ x: 20+Math.random()*(W-40), y:-20-Math.random()*30, tx: hero.x-10+Math.random()*20, speed: 60+Math.random()*40, size: 5+Math.floor(Math.random()*4), delay: i*0.2 });
         }
       }
-      if (boss.state==='slash') { boss.slashX = hero.x + (Math.random()-0.5)*40; boss.slashDir = boss.slashX < W/2 ? 1 : -1; }
+      if (boss.state==='slash') { 
+          boss.slashDir = hero.x < W/2 ? -1 : 1; 
+      }
       if (boss.state==='beam') { boss.beamX = hero.x; boss.beamActive = true; }
       if (boss.state==='octaslash') { boss.octaCount = 0; }
       if (boss.state==='shadowflare') {
@@ -654,6 +669,13 @@
     function updateFight(dt) {
       t += dt;
       frameN++;
+      
+      let currentShake = Math.max(0, screenShake);
+      if (currentShake > 0) {
+          ctx.save();
+          ctx.translate((Math.random()-0.5)*currentShake, (Math.random()-0.5)*currentShake);
+      }
+
       boss.wingAngle = 0.3 + Math.sin(t*1.5)*0.15; boss.floatY = Math.sin(t*1.2)*4;
       if (boss.wingSpan < 1) boss.wingSpan = Math.min(1, boss.wingSpan+dt*0.8);
       
@@ -705,6 +727,7 @@
           if (!boss.invincible) {
             boss.hp=Math.max(0,boss.hp-dmg);
             spawnParticles(boss.x,boss.y,25,C.lightest,140,0.8); spawnParticles(boss.x,boss.y,15,C.darkest,80,0.6); flash(C.lightest,0.25);
+            screenShake = 6;
           }
         }
       }
@@ -714,12 +737,15 @@
         boss.phase=2; boss.hp=BOSS_MAXHP2; boss.maxHp=BOSS_MAXHP2; boss.invincible=true; boss.invTimer=2.5; boss.state='idle';
         boss.actionTimer=2.5;
         flash(C.darkest,0.4); spawnParticles(boss.x,boss.y,30,C.dark,120,1.5); STATE='phase2';
-        setTimeout(()=>{ if(STATE==='phase2') STATE='fight'; },2500); return;
+        setTimeout(()=>{ if(STATE==='phase2') STATE='fight'; },2500); 
+        if(currentShake>0) ctx.restore();
+        return;
       }
       if (boss.hp <= 0 && boss.phase===2 && !boss.dead) {
         boss.dead=true;
         spawnParticles(boss.x,boss.y,40,C.lightest,160,2.0); flash(C.lightest,0.5); 
         setTimeout(()=>{ STATE='cutscene'; cutsceneT=0; }, 2000);
+        if(currentShake>0) ctx.restore();
         return;
       }
 
@@ -734,38 +760,51 @@
             if (boss.actionTimer <= 0) bossChooseAttack();
         }
 
+        // Heavy Dynamic Slash Attack
         if (boss.state==='slash') {
           boss.masamuneActive = true;
-          if (boss.stateTimer < 0.4) { 
-             boss.x += (boss.slashX - boss.x) * 5 * dt; 
-             boss.masamuneAngle = -0.5; // Wind up 
-          } 
-          else {
-             // Sweep sword arc rapidly
-             boss.masamuneAngle = -0.5 + ((boss.stateTimer - 0.4) / 0.4) * Math.PI;
+          if (boss.stateTimer < 0.4) {
+             // Wind up backward
+             boss.masamuneAngle = -1.0;
+             boss.x += (hero.x + 30 * boss.slashDir - boss.x) * 5 * dt;
+             if (boss.stateTimer < dt * 2) playSfx(400, 'sawtooth', 0.2, 0.05);
+          } else {
+             // Dash and swing
+             if (boss.stateTimer >= 0.4 && boss.stateTimer - dt < 0.4) {
+                playSfx(900, 'sawtooth', 0.15, 0.2); // Heavy Swish
+                screenShake = 4;
+                boss.slashX = hero.x - 40 * boss.slashDir; // Dash destination
+             }
+             boss.masamuneAngle = 1.5; // Swing forward
+             boss.x += (boss.slashX - boss.x) * 15 * dt; // Hyperspeed dash
              
-             ctx.save();
-             ctx.globalAlpha = Math.max(0, 1 - (boss.stateTimer - 0.4)/0.4);
-             fr(boss.slashX - 6, boss.y + 20, 12, H, C.darkest);
-             fr(boss.slashX - 2, boss.y + 20, 4, H, C.lightest);
-             ctx.restore();
+             // Draw visual slash arc trail
+             ctx.globalAlpha = Math.max(0, 1 - (boss.stateTimer - 0.4)/0.3);
+             fr(boss.x - 30, boss.y + 10, 60, 3, C.lightest);
+             fr(boss.x - 30, boss.y + 8, 60, 1, C.darkest);
+             ctx.globalAlpha = 1;
              
-             if (!hero.invincible && Math.abs(hero.x - boss.slashX) < 16) { heroTakeDamage(boss.phase === 2 ? 14 : 9); }
+             if (!hero.invincible && Math.abs(hero.x - boss.x) < 25) { heroTakeDamage(boss.phase === 2 ? 14 : 9); }
              if (boss.stateTimer > 0.8) { boss.state = 'idle'; boss.actionTimer = 0.8; boss.masamuneActive = false; }
           }
         }
+        
         if (boss.state==='beam') {
           if (boss.stateTimer<0.5) { ctx.globalAlpha=boss.stateTimer/0.5*0.4;
             fr(boss.beamX-10,boss.y,20,H,C.lightest); ctx.globalAlpha=1; } 
           else {
+            if (boss.stateTimer >= 0.5 && boss.stateTimer - dt < 0.5) { playSfx(800, 'sawtooth', 0.3, 0.15); screenShake = 2; }
             fr(boss.beamX-5,0,10,H,C.darkest);
             fr(boss.beamX-2,0,4,H,C.lightest);
             if (!hero.invincible && Math.abs(hero.x-boss.beamX)<8) heroTakeDamage(boss.phase===2?18:12);
             if (boss.stateTimer>1.2) { boss.state='idle'; boss.actionTimer=1.0; boss.beamActive=false; }
           }
         }
+        
+        // Standard Masamune Sweep
         if (boss.state==='masamune') {
           boss.masamuneActive = true;
+          if (boss.stateTimer < dt * 2) playSfx(700, 'sawtooth', 0.2, 0.1);
           boss.masamuneAngle += dt*(boss.phase===2?6:4);
           
           const mTip = { x: boss.x+Math.sin(boss.masamuneAngle)*115, y: boss.y-Math.cos(boss.masamuneAngle)*115 };
@@ -774,10 +813,11 @@
           const hitTip = Math.abs(hero.x-mTip.x)<16 && Math.abs(hero.y-mTip.y)<16;
           const hitMid = Math.abs(hero.x-mMid.x)<16 && Math.abs(hero.y-mMid.y)<16;
           
-          if (!hero.invincible && (hitTip || hitMid)) heroTakeDamage(boss.phase===2?16:10);
+          if (!hero.invincible && (hitTip || hitMid)) { heroTakeDamage(boss.phase===2?16:10); screenShake = 4; }
           
           if (boss.stateTimer>2.0) { boss.state='idle'; boss.actionTimer=1.2; boss.masamuneActive=false; boss.masamuneAngle=0; }
         }
+        
         if (boss.state==='meteor') {
           boss.meteorList=boss.meteorList.filter(m => {
             if (m.delay>0) { m.delay-=dt; return true; } m.y += m.speed*dt;
@@ -785,41 +825,82 @@
             ctx.fillStyle=C.darkest; ctx.beginPath(); ctx.arc(m.x,m.y,m.size,0,Math.PI*2); ctx.fill();
             ctx.fillStyle=C.dark; ctx.beginPath(); ctx.arc(m.x-1,m.y-1,m.size-2,0,Math.PI*2); ctx.fill();
             ctx.fillStyle=C.light; ctx.globalAlpha=0.5; fr(m.x-1,m.y-m.size*2,2,m.size*2,C.lightest); ctx.globalAlpha=1;
-            if (m.y > H-22) { spawnParticles(m.x,H-22,8,C.dark,70,0.5); if (!hero.invincible && Math.abs(hero.x-m.x)<14) heroTakeDamage(boss.phase===2?20:13); return false; } return true;
+            if (m.y > H-22) { 
+                spawnParticles(m.x,H-22,8,C.dark,70,0.5); 
+                playSfx(200, 'square', 0.2, 0.1); 
+                screenShake = 3;
+                if (!hero.invincible && Math.abs(hero.x-m.x)<14) heroTakeDamage(boss.phase===2?20:13); 
+                return false; 
+            } return true;
           });
           if (boss.meteorList.length===0 && boss.stateTimer>1.5) { boss.state='idle'; boss.actionTimer=1.0; }
         }
+        
         if (boss.state==='supernova') {
           boss.novaTimer+=dt;
+          if (boss.stateTimer < dt * 2) playSfx(300, 'square', 2.0, 0.2); // Build up noise
+          
           const rings = Math.min(5, Math.floor(boss.novaTimer/0.3)+1);
           for (let r=0;r<rings;r++) {
             const radius=(r+1)*18+boss.novaTimer*20;
             ctx.strokeStyle=r%2===0?C.darkest:C.dark; ctx.lineWidth=3+r;
             ctx.globalAlpha=Math.max(0,1-boss.novaTimer/2); ctx.beginPath(); ctx.arc(boss.x,boss.y,radius,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
           }
-          if (boss.novaTimer>0.8&&boss.novaTimer<1.6&&!hero.invincible) heroTakeDamage(25*dt);
+          if (boss.novaTimer>0.8&&boss.novaTimer<1.6) {
+              screenShake = 2;
+              if (!hero.invincible) heroTakeDamage(25*dt);
+          }
           if (boss.novaTimer>2.0) { boss.state='idle'; boss.actionTimer=1.5; boss.novaActive=false; }
         }
         
-        // NEW ATTACKS
+        // NEW OCTASLASH - Dynamic Teleporting Strikes
         if (boss.state==='octaslash') {
-            boss.masamuneActive = true;
-            boss.masamuneAngle = boss.stateTimer * 20; // Whirl the sword wildly
+            if (boss.stateTimer < dt * 2) { boss.octaLines = []; boss.masamuneActive = true; }
             
-            if (boss.stateTimer > boss.octaCount * 0.25 && boss.octaCount < 8) {
-                boss.slashX = hero.x + (Math.random()-0.5)*40;
+            if (boss.stateTimer > boss.octaCount * 0.2 && boss.octaCount < 8) {
+                const oldX = boss.x, oldY = boss.y;
+                boss.slashX = hero.x + (Math.random()-0.5)*60;
                 boss.x = boss.slashX;
-                boss.y = hero.y - 20 - Math.random()*20; 
+                boss.y = hero.y - 10 - Math.random()*30; 
                 
-                if (!hero.invincible && Math.abs(hero.x - boss.x) < 30 && Math.abs(hero.y - boss.y) < 30) {
+                boss.octaLines.push({x1: oldX, y1: oldY, x2: boss.x, y2: boss.y, life: 0.4});
+                
+                if (!hero.invincible && Math.abs(hero.x - boss.x) < 35 && Math.abs(hero.y - boss.y) < 35) {
                     heroTakeDamage(boss.phase===2?15:10);
                 }
-                spawnParticles(boss.x, boss.y, 5, C.light, 80, 0.2);
+                
+                spawnParticles(boss.x, boss.y, 8, C.lightest, 100, 0.2);
                 boss.octaCount++;
-                playSfx(400, 'square', 0.05);
+                
+                // Audio ascends with each slash
+                playSfx(600 + boss.octaCount*80, 'sawtooth', 0.1, 0.15);
+                screenShake = 2;
+                
+                if (boss.octaCount === 8) {
+                    screenShake = 8; // Massive shake on final hit
+                    playSfx(400, 'square', 0.3, 0.3);
+                }
             }
+            
+            // Draw Warp Lines
+            if (boss.octaLines) {
+                boss.octaLines.forEach(l => {
+                    ctx.beginPath();
+                    ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2);
+                    ctx.strokeStyle = C.lightest; ctx.lineWidth = 2;
+                    ctx.globalAlpha = l.life / 0.4;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                    l.life -= dt;
+                });
+                boss.octaLines = boss.octaLines.filter(l => l.life > 0);
+            }
+            
+            boss.masamuneAngle = boss.stateTimer * 25; // Whirl wildly
+            
             if (boss.stateTimer > 2.5) { boss.state='idle'; boss.actionTimer=0.5; boss.masamuneActive=false; }
         }
+        
         if (boss.state==='shadowflare') {
             boss.flareList = boss.flareList.filter(f => {
                 f.x += (hero.x - f.x) * dt * 0.8;
@@ -828,7 +909,7 @@
                 ctx.fillStyle = C.darkest; ctx.beginPath(); ctx.arc(f.x, f.y, 8, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = C.lightest; ctx.beginPath(); ctx.arc(f.x, f.y, 4, 0, Math.PI*2); ctx.fill();
                 if (!hero.invincible && Math.abs(hero.x-f.x)<10 && Math.abs(hero.y-f.y)<10) {
-                    heroTakeDamage(25); return false;
+                    heroTakeDamage(25); screenShake = 5; return false;
                 }
                 f.life -= dt;
                 return f.life > 0;
@@ -837,10 +918,25 @@
         }
       }
       
-      if (hero.hp<=0&&!hero.dead) { hero.dead=true;
-        spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); setTimeout(()=>{ STATE='gameover'; },1500); }
+      if (hero.hp<=0&&!hero.dead) { 
+          hero.dead=true;
+          playSfx(200, 'sawtooth', 1.0, 0.3);
+          screenShake = 10;
+          spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); 
+          setTimeout(()=>{ STATE='gameover'; },1500); 
+      }
 
-      drawBackground(); drawBoss(); drawHero(); updateParticles(dt); drawHUD(); drawBottomBar();
+      drawBackground(); drawBoss(); drawHero(); updateParticles(dt); 
+      
+      // Cleanup Screen Shake Translation before drawing UI
+      if (currentShake > 0) {
+          ctx.restore();
+          screenShake -= dt * 30; // Reduce shake intensity over time
+          if (screenShake < 0) screenShake = 0;
+      }
+      
+      drawHUD(); drawBottomBar();
+      
       if (flashTimer>0) { flashTimer-=dt;
         ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
       if (STATE==='phase2') {
@@ -854,9 +950,10 @@
       if (hero.invincible || hero.dead) return;
       dmg = Math.floor(dmg * diffMults.dmg);
       hero.hp = Math.max(0, hero.hp - dmg); hero.invincible=true; hero.invTimer=0.6;
-      hero.slashFx = { active: true, timer: 0.25 }; // Trigger the visual player hit effect
+      hero.slashFx = { active: true, timer: 0.3 }; // Trigger visceral player hit effect
+      screenShake += 5; // Add immediate global screen shake
       spawnParticles(hero.x,hero.y,6,C.darkest,60,0.4); flash(C.dark,0.1); hero.limitGauge=Math.min(100,hero.limitGauge+10);
-      playSfx(150, 'sawtooth', 0.2, 0.15);
+      playSfx(300, 'sawtooth', 0.2, 0.2); // Aggressive retro hit sound
     }
 
     let titleT=0;
@@ -917,8 +1014,8 @@
             hero.limitGauge=0; hero.limitBreak=false;
             boss.hp=BOSS_MAXHP; boss.maxHp=BOSS_MAXHP; boss.phase=1; boss.state='idle'; boss.actionTimer=2.0; boss.dead=false; boss.wingSpan=0; boss.masamuneActive=false; boss.beamActive=false;
             boss.meteorList=[]; boss.flareList=[]; boss.novaActive=false; boss.invincible=false; boss.x=W/2; boss.y=65;
-            boss.floatY=0; particles=[]; flashTimer=0;
-            cutsceneT=0; boss.octaCount = 0;
+            boss.floatY=0; particles=[]; flashTimer=0; screenShake=0;
+            cutsceneT=0; boss.octaCount = 0; boss.octaLines = [];
         }
     }
 
