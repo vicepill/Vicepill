@@ -81,14 +81,12 @@
 
   :root {
     --gb-lightest: #9bbc0f; --gb-light: #8bac0f; --gb-dark: #306230; --gb-darkest: #0f380f;
-    --btn-ab: #c44040; --btn-ab-sh: #8a1c1c;
-    --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a; 
+    --btn-ab: #c44040; --btn-ab-sh: #8a1c1c; --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a; 
   }
 
   #game-container {
     display: none; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 40;
-    justify-content: center; align-items: center; background: #0a0a14;
-    font-family: 'Press Start 2P', monospace;
+    justify-content: center; align-items: center; background: #0a0a14; font-family: 'Press Start 2P', monospace;
   }
   #game-container::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0a0a14 60%); z-index:-1; }
   #game-container::after { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:9999; }
@@ -105,10 +103,7 @@
   }
   .phone-notch .camera { width:10px; height:10px; background:#1a1a2e; border-radius:50%; border:2px solid #333; }
   .phone-notch .speaker { width:40px; height:5px; background:#111; border-radius:3px; border:1px solid #333; }
-  .phone-screen {
-    flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
-    padding: 8px 12px 8px; overflow: hidden;
-  }
+  .phone-screen { flex:1; width:100%; display:flex; flex-direction:column; align-items:center; padding: 8px 12px 8px; overflow: hidden; }
 
   .console-device {
     width: 300px; background: linear-gradient(170deg, var(--body-color) 0%, #9a8a78 50%, var(--body-dark) 100%);
@@ -176,7 +171,7 @@
   .btn-action:active,.btn-action.pressed { transform:translateY(3px)!important; box-shadow:0 1px 0 var(--btn-ab-sh),0 2px 4px rgba(0,0,0,0.4)!important; }
   .btn-y{top:0;left:31px} .btn-x{top:31px;left:0} .btn-a{top:31px;right:0} .btn-b{bottom:0;left:31px}
 
-  .select-start-row { display:flex; gap:16px; margin-margin-top:8px; }
+  .select-start-row { display:flex; gap:16px; margin-top:8px; }
   .btn-pill {
     width:50px; height:14px; border-radius:7px; background:linear-gradient(180deg,#555,#333);
     box-shadow:0 3px 0 #1a1a1a,0 4px 6px rgba(0,0,0,0.4); cursor:pointer; user-select:none;
@@ -334,7 +329,6 @@
     let diffMults = { hp: 1, dmg: 1, spd: 1 };
     let BOSS_MAXHP = 350;
     let BOSS_MAXHP2 = 500;
-
     function updateVignette(t) {
       let opacity;
       if (t <= SLOW_END) {
@@ -499,7 +493,6 @@
       wingSpan: 0, wingAngle: 0, beamX: 0, beamActive: false, meteorList: [], flareList: [], masamuneAngle: 0, masamuneActive: false,
       slashX: W/2, slashDir: 1, invincible: false, phase2Transition: false, novaTimer: 0, novaActive: false, floatY: 0, octaCount: 0
     };
-    
     function drawBoss() {
       const bx = boss.x, by = boss.y + boss.floatY;
       const p2 = boss.phase === 2;
@@ -527,10 +520,11 @@
       fr(bx-8,by-10,5,5,hairCol); fr(bx+3,by-10,5,5,hairCol);
       fr(bx-4,by-22,8,8,C.lightest); fr(bx-5,by-25,10,5,hairCol); fr(bx-3,by-27,6,4,hairCol);
       fr(bx-3,by-19,2,2,C.dark); fr(bx+1,by-19,2,2,C.dark); fr(bx-1,by-15,2,1,C.light);
-      
       if (!boss.masamuneActive) {
         ctx.save();
-        ctx.translate(bx-7, by-14); ctx.rotate(-0.15);
+        ctx.translate(bx-7, by-14);
+        const sway = Math.sin(t * 2.5) * 0.08;
+        ctx.rotate(-0.15 + sway);
         fr(0,0,2,115,C.lightest); fr(-1,0,4,4,C.dark); fr(-1,0,1,115,C.dark); ctx.restore();
       }
       if (p2) { ctx.globalAlpha=0.15+0.1*Math.sin(t*4); fr(bx-20,by-30,40,60,C.darkest); ctx.globalAlpha=1; }
@@ -538,14 +532,14 @@
     }
 
     function bossChooseAttack() {
-      const pool = boss.phase===1 ? ['slash','slash','beam','masamune','meteor'] : ['slash','beam','masamune','meteor','meteor','supernova'];
+      const pool = boss.phase===1 ?
+      ['slash','slash','beam','masamune','meteor'] : ['slash','beam','masamune','meteor','meteor','supernova'];
       
       if (diffLevel >= 2) { pool.push('octaslash'); if(boss.phase===2) pool.push('octaslash'); }
       if (diffLevel >= 3) { pool.push('shadowflare'); if(boss.phase===2) pool.push('shadowflare', 'shadowflare'); }
 
       boss.state = pool[Math.floor(Math.random()*pool.length)];
       boss.stateTimer = 0; boss.actionTimer = (1.2 + Math.random()*0.8) / diffMults.spd;
-      
       if (boss.state==='masamune') boss.masamuneActive=true;
       if (boss.state==='supernova') { boss.novaActive=true; boss.novaTimer=0; }
       if (boss.state==='meteor') {
@@ -566,7 +560,8 @@
 
     function drawHUD() {
       fr(0,0,W,20,C.darkest);
-      txt('HP',2,9,5,C.lightest); fr(16,2,80,8,C.dark); fr(16,2,Math.max(0,Math.floor(80*(hero.hp/hero.maxHp))),8,C.lightest); fr(16,2,80,2,'rgba(255,255,255,0.15)');
+      txt('HP',2,9,5,C.lightest); fr(16,2,80,8,C.dark); fr(16,2,Math.max(0,Math.floor(80*(hero.hp/hero.maxHp))),8,C.lightest);
+      fr(16,2,80,2,'rgba(255,255,255,0.15)');
       txt('MP',2,18,4,C.light); fr(16,12,80,5,C.dark); fr(16,12,Math.max(0,Math.floor(80*(hero.mp/hero.maxMp))),5,C.light);
       txt('SEP',W-50,9,5,C.lightest); const bHpW = 44; fr(W-bHpW-2,2,bHpW,8,C.dark);
       const bHpFill = Math.max(0,Math.floor(bHpW*(boss.hp/boss.maxHp)));
@@ -580,7 +575,7 @@
       clr(C.darkest);
       const starCount = boss.phase===2 ? 40 : 15;
       for (let i=0;i<starCount;i++) { 
-        const sx=(i*67+13)%W, sy=(i*43+7)%(H*0.6); 
+        const sx=(i*67+13)%W, sy=(i*43+7)%(H*0.6);
         const blink = Math.sin(t*3+i*1.7)>0.5;
         fr(sx,sy,blink?2:1,blink?2:1, boss.phase===2 ? C.light : C.dark);
       }
@@ -594,7 +589,6 @@
       ctx.moveTo(0, H*0.65);
       for(let i=0; i<=W; i+=25) { ctx.lineTo(i, H*0.60 - Math.cos(i*0.08)*10); }
       ctx.lineTo(W, H*0.65); ctx.fill();
-
       fr(0, H*0.65, W, H*0.35, C.dark);
       ctx.strokeStyle = C.darkest; ctx.lineWidth = 1; ctx.beginPath();
       for(let i=1; i<8; i++) {
@@ -602,7 +596,8 @@
         ctx.moveTo(0, y); ctx.lineTo(W, y);
       }
       for(let i=-7; i<8; i++) {
-        let xTop = W/2 + i*15; let xBot = W/2 + i*45;
+        let xTop = W/2 + i*15;
+        let xBot = W/2 + i*45;
         ctx.moveTo(xTop, H*0.65); ctx.lineTo(xBot, H);
       }
       ctx.stroke();
@@ -616,10 +611,10 @@
     }
 
     function updateFight(dt) {
-      t += dt; frameN++;
+      t += dt;
+      frameN++;
       boss.wingAngle = 0.3 + Math.sin(t*1.5)*0.15; boss.floatY = Math.sin(t*1.2)*4;
       if (boss.wingSpan < 1) boss.wingSpan = Math.min(1, boss.wingSpan+dt*0.8);
-      
       if (!hero.dead) {
         const spd = hero.speed * (hero.limitBreak ? 1.5 : 1);
         if (keys.left  && hero.x > 12)   hero.x -= spd*dt;
@@ -627,7 +622,8 @@
       }
       if (hero.attackCooldown > 0) hero.attackCooldown -= dt;
       if (hero.invincible) { hero.invTimer -= dt; if(hero.invTimer<=0) hero.invincible=false; }
-      if (boss.invincible) { boss.invTimer -= dt; if(boss.invTimer<=0) boss.invincible=false; }
+      if (boss.invincible) { boss.invTimer -= dt;
+      if(boss.invTimer<=0) boss.invincible=false; }
 
       if (hero.attacking) {
         hero.attackTimer -= dt;
@@ -666,7 +662,6 @@
         }
       }
       if (hero.mp < hero.maxMp) hero.mp = Math.min(hero.maxMp, hero.mp+dt*3);
-      
       if (boss.hp <= 0 && boss.phase===1) {
         boss.phase=2; boss.hp=BOSS_MAXHP2; boss.maxHp=BOSS_MAXHP2; boss.invincible=true; boss.invTimer=2.5; boss.state='idle';
         boss.actionTimer=2.5;
@@ -683,19 +678,27 @@
       if (!boss.dead && !boss.invincible) {
         boss.actionTimer -= dt;
         boss.stateTimer += dt;
-        if (boss.state==='idle' && boss.actionTimer<=0) bossChooseAttack();
+        
+        if (boss.state==='idle') {
+            boss.x += (W/2 - boss.x) * 4 * dt;
+            boss.y += (65 - boss.y) * 4 * dt;
+            if (boss.actionTimer<=0) bossChooseAttack();
+        }
+
         if (boss.state==='slash') {
-          if (boss.stateTimer < 0.4) { boss.x += (boss.slashX-boss.x)*5*dt; } 
+          if (boss.stateTimer < 0.4) { boss.x += (boss.slashX-boss.x)*5*dt;
+          } 
           else {
             fr(boss.slashX-4, boss.y, 8, H-boss.y-18, C.darkest);
             ctx.globalAlpha=0.4;
             fr(boss.slashX-8,boss.y,16,H-boss.y-18,C.dark); ctx.globalAlpha=1;
             if (!hero.invincible && Math.abs(hero.x-boss.slashX)<12) { heroTakeDamage(boss.phase===2?14:9); }
-            if (boss.stateTimer>0.8) { boss.state='idle'; boss.actionTimer=0.8; boss.masamuneActive=false; boss.x=W/2; }
+            if (boss.stateTimer>0.8) { boss.state='idle'; boss.actionTimer=0.8; boss.masamuneActive=false; }
           }
         }
         if (boss.state==='beam') {
-          if (boss.stateTimer<0.5) { ctx.globalAlpha=boss.stateTimer/0.5*0.4; fr(boss.beamX-10,boss.y,20,H,C.lightest); ctx.globalAlpha=1; } 
+          if (boss.stateTimer<0.5) { ctx.globalAlpha=boss.stateTimer/0.5*0.4;
+            fr(boss.beamX-10,boss.y,20,H,C.lightest); ctx.globalAlpha=1; } 
           else {
             fr(boss.beamX-5,0,10,H,C.darkest);
             fr(boss.beamX-2,0,4,H,C.lightest);
@@ -754,12 +757,13 @@
                 boss.octaCount++;
                 playSfx(400, 'square', 0.05);
             }
-            if (boss.stateTimer > 2.5) { boss.state='idle'; boss.actionTimer=0.5; boss.masamuneActive=false; boss.x=W/2; boss.y=65; }
+            if (boss.stateTimer > 2.5) { boss.state='idle'; boss.actionTimer=0.5; boss.masamuneActive=false; }
         }
         if (boss.state==='shadowflare') {
             boss.flareList = boss.flareList.filter(f => {
                 f.x += (hero.x - f.x) * dt * 0.8;
                 f.y += (hero.y - f.y) * dt * 0.8;
+                
                 ctx.fillStyle = C.darkest; ctx.beginPath(); ctx.arc(f.x, f.y, 8, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = C.lightest; ctx.beginPath(); ctx.arc(f.x, f.y, 4, 0, Math.PI*2); ctx.fill();
                 if (!hero.invincible && Math.abs(hero.x-f.x)<10 && Math.abs(hero.y-f.y)<10) {
@@ -772,12 +776,15 @@
         }
       }
       
-      if (hero.hp<=0&&!hero.dead) { hero.dead=true; spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); setTimeout(()=>{ STATE='gameover'; },1500); }
+      if (hero.hp<=0&&!hero.dead) { hero.dead=true;
+      spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); setTimeout(()=>{ STATE='gameover'; },1500); }
 
       drawBackground(); drawBoss(); drawHero(); updateParticles(dt); drawHUD(); drawBottomBar();
-      if (flashTimer>0) { flashTimer-=dt; ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
+      if (flashTimer>0) { flashTimer-=dt;
+      ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
       if (STATE==='phase2') {
-        fr(0,0,W,H,C.darkest); ctx.globalAlpha=0.8; const blink = Math.floor(t*4)%2===0;
+        fr(0,0,W,H,C.darkest);
+        ctx.globalAlpha=0.8; const blink = Math.floor(t*4)%2===0;
         if (blink) { txtC('SEPHIROTH',70,8,C.lightest); txtC('ENRAGES!',90,7,C.light); txtC('ONE WINGED',115,6,C.dark); txtC('ANGEL',130,10,C.dark); } ctx.globalAlpha=1;
       }
     }
@@ -811,11 +818,11 @@
     }
 
     function updateDifficulty(dt) {
-        diffT += dt; t += dt; clr(C.darkest);
+        diffT += dt;
+        t += dt; clr(C.darkest);
         for (let i=0;i<40;i++) { const sx=(i*67+13+Math.floor(diffT*8))%W; const sy=(i*43+7)%H; const blink=Math.sin(diffT*2+i)>0.3; fr(sx,sy,blink?2:1,1,i%4===0?C.lightest:C.dark); }
         fr(0,30,W,140,C.darkest); fr(2,32,W-4,136,C.dark);
         txtC('SELECT DIFFICULTY', 50, 6, C.lightest);
-        
         if (jp.up) { diffSelection = (diffSelection - 1 + 4) % 4; playSfx(600, 'square', 0.05); }
         if (jp.down) { diffSelection = (diffSelection + 1) % 4; playSfx(600, 'square', 0.05); }
         
@@ -838,14 +845,17 @@
             if(diffLevel===2) { diffMults = { hp: 0.8, dmg: 1.5, spd: 1.3 }; BOSS_MAXHP=500; BOSS_MAXHP2=700; }
             if(diffLevel===3) { diffMults = { hp: 0.5, dmg: 2.0, spd: 1.8 }; BOSS_MAXHP=700; BOSS_MAXHP2=999; }
             
-            STATE='intro'; titleT=0; t=0; hero.x=W/2; hero.y=H-28;
+            STATE='intro';
+            titleT=0; t=0; hero.x=W/2; hero.y=H-28;
             hero.maxHp = Math.floor(150 * diffMults.hp);
             hero.hp = hero.maxHp;
             hero.mp = 100; hero.attacking = false;
-            hero.invincible=false; hero.dead=false; hero.limitGauge=0; hero.limitBreak=false;
+            hero.invincible=false; hero.dead=false;
+            hero.limitGauge=0; hero.limitBreak=false;
             boss.hp=BOSS_MAXHP; boss.maxHp=BOSS_MAXHP; boss.phase=1; boss.state='idle'; boss.actionTimer=2.0; boss.dead=false; boss.wingSpan=0; boss.masamuneActive=false; boss.beamActive=false;
             boss.meteorList=[]; boss.flareList=[]; boss.novaActive=false; boss.invincible=false; boss.x=W/2; boss.y=65;
-            boss.floatY=0; particles=[]; flashTimer=0; cutsceneT=0; boss.octaCount = 0;
+            boss.floatY=0; particles=[]; flashTimer=0;
+            cutsceneT=0; boss.octaCount = 0;
         }
     }
 
@@ -877,7 +887,8 @@
          if (cutsceneT > 7.0) txtC('STAY WHERE YOU BELONG...', 100, 5, C.light);
          if (cutsceneT > 8.5) txtC('IN MY MEMORIES.', 115, 6, C.lightest);
       } else if (cutsceneT >= 10) {
-         STATE = 'victory'; victoryT = 0;
+         STATE = 'victory';
+         victoryT = 0;
       }
     }
 
@@ -895,12 +906,14 @@
 
     let goT=0;
     function updateGameOver(dt) {
-      goT+=dt; t+=dt; fr(0,0,W,H,C.darkest);
+      goT+=dt; t+=dt;
+      fr(0,0,W,H,C.darkest);
       for (let i=0;i<5;i++) { ctx.globalAlpha=0.05+i*0.04; fr(0,i*40,W,40,C.dark); ctx.globalAlpha=1; }
       fr(0,60,W,80,C.darkest); fr(2,62,W-4,76,C.dark); txtC('YOU FELL...',76,6,C.lightest); txtC('SEPHIROTH',92,5,C.light); txtC('LAUGHS.',104,5,C.dark);
       for (let f=0;f<6;f++) { const fa=(0.4+f*0.28)+Math.sin(goT*1.5)*0.1; const fl=(24+f*8);
       ctx.save(); ctx.translate(W/2+3,150); ctx.rotate(fa); fr(0,0,3,fl,f%2===0?C.dark:C.light); ctx.restore(); }
-      fr(W/2-5,125,10,8,C.lightest); fr(W/2-8,133,16,20,C.dark);
+      fr(W/2-5,125,10,8,C.lightest);
+      fr(W/2-8,133,16,20,C.dark);
       if (Math.floor(goT*2)%2===0) txtC('A = TRY AGAIN',190,4,C.light);
       if (jp.a || jp.start) { STATE='title'; goT=0; titleT=0; }
     }
