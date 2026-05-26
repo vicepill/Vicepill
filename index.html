@@ -707,7 +707,10 @@
       }
       if (boss.hp <= 0 && boss.phase===2 && !boss.dead) {
         boss.dead=true;
-        spawnParticles(boss.x,boss.y,40,C.lightest,160,2.0); flash(C.lightest,0.5); setTimeout(()=>{ STATE='victory'; },2000); return;
+        spawnParticles(boss.x,boss.y,40,C.lightest,160,2.0); flash(C.lightest,0.5); 
+        // TRANSITION TO THE NEW CUTSCENE STATE
+        setTimeout(()=>{ STATE='cutscene'; cutsceneT=0; }, 2000); 
+        return;
       }
 
       if (!boss.dead && !boss.invincible) {
@@ -811,7 +814,7 @@
         hero.invincible=false; hero.dead=false; hero.limitGauge=0; hero.limitBreak=false;
         boss.hp=BOSS_MAXHP; boss.maxHp=BOSS_MAXHP; boss.phase=1; boss.state='idle'; boss.actionTimer=2.0; boss.dead=false; boss.wingSpan=0; boss.masamuneActive=false; boss.beamActive=false;
         boss.meteorList=[]; boss.novaActive=false; boss.invincible=false; boss.x=W/2;
-        boss.floatY=0; particles=[]; flashTimer=0;
+        boss.floatY=0; particles=[]; flashTimer=0; cutsceneT=0;
       }
     }
 
@@ -824,6 +827,34 @@
       const startY=H/2-introCrawl.length*lineH/2 - introT*12; 
       introCrawl.forEach((line,i)=>{ const y=startY+i*lineH; if (y<-10||y>H+10) return; txtC(line,y,5,C.lightest); });
       if (introT>9.0 || jp.a || jp.start) { playSfx(880, 'square', 0.1); STATE='fight'; t=0; particles=[]; } 
+    }
+
+    // THE NEW POST-BATTLE DIALOGUE CUTSCENE
+    let cutsceneT = 0;
+    function updateCutscene(dt) {
+      cutsceneT += dt;
+      clr(C.darkest);
+      
+      // Mako Lifestream background effect
+      for(let i=0; i<30; i++) {
+         let px = (i * 23 + Math.sin(cutsceneT + i) * 10) % W;
+         let py = (H + 20) - ((cutsceneT * 20 + i * 15) % (H + 40));
+         fr(px, py, 2, 2, i%2===0 ? C.dark : C.light);
+      }
+
+      // Dialogue timing sequence
+      if (cutsceneT > 1 && cutsceneT < 5) {
+         txtC('SEPHIROTH:', 80, 5, C.dark);
+         if (cutsceneT > 2.0) txtC('I WILL...', 100, 6, C.light);
+         if (cutsceneT > 3.0) txtC('NEVER BE A MEMORY.', 115, 6, C.lightest);
+      } else if (cutsceneT > 6 && cutsceneT < 10) {
+         txtC('CLOUD:', 80, 5, C.dark);
+         if (cutsceneT > 7.0) txtC('STAY WHERE YOU BELONG...', 100, 5, C.light);
+         if (cutsceneT > 8.5) txtC('IN MY MEMORIES.', 115, 6, C.lightest);
+      } else if (cutsceneT >= 10) {
+         STATE = 'victory';
+         victoryT = 0;
+      }
     }
 
     let victoryT=0;
@@ -861,6 +892,7 @@
         case 'intro':    updateIntro(dt);    break;
         case 'fight':
         case 'phase2':   updateFight(dt);    break;
+        case 'cutscene': updateCutscene(dt); break;
         case 'victory':  updateVictory(dt);  break;
         case 'gameover': updateGameOver(dt); break;
       }
