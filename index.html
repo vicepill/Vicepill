@@ -6,9 +6,7 @@
 <title>MAGITEK — Secret Boss</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
-  /* =========================================
-     GLOBAL STYLES
-  ========================================= */
+  
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     width: 100%;
@@ -18,9 +16,6 @@
     font-family: sans-serif;
   }
 
-  /* =========================================
-     MAGITEK INTERFACE
-  ========================================= */
   #magitek-container {
     position: absolute; inset: 0;
     width: 100%;
@@ -33,14 +28,16 @@
   }
   #scroller img {
     width: 100%;
-    display: block; }
+    display: block; 
+  }
   #vignette {
     position: fixed;
     inset: 0;
     z-index: 15;
     pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.92) 80%, rgba(0,0,0,1) 100%);
     opacity: 1;
-    transition: opacity 0.08s linear; }
+    transition: opacity 0.08s linear; 
+  }
   
   #magitekButton {
     position: fixed; top: 50%; left: 50%;
@@ -50,11 +47,14 @@
   #magitekButton svg {
     display: block; image-rendering: pixelated;
     filter: drop-shadow(0 0 6px rgba(255,255,255,0.6)) drop-shadow(0 0 18px rgba(255,255,255,0.25)) drop-shadow(0 0 40px rgba(180,180,255,0.15));
-    transition: filter 0.15s; }
+    transition: filter 0.15s; 
+  }
   #magitekButton:hover svg {
-    filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)) drop-shadow(0 0 28px rgba(255,255,255,0.5)) drop-shadow(0 0 60px rgba(180,180,255,0.35)); }
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)) drop-shadow(0 0 28px rgba(255,255,255,0.5)) drop-shadow(0 0 60px rgba(180,180,255,0.35)); 
+  }
   #magitekButton::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; background: repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px); }
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; background: repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px); 
+  }
 
   @keyframes flicker {
     0%,100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.4; } 94% { opacity: 1; } 97% { opacity: 1; } 98% { opacity: 0.2; } 99% { opacity: 1; }
@@ -84,25 +84,23 @@
   }
   #closeBtn:hover { opacity: 1; }
 
-  /* Secret Button */
   #secretBtn {
     background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.2); font-family: 'Times New Roman', Times, serif; font-size: 24px; padding: 5px 20px; cursor: pointer;
     transition: all 0.3s ease; border-radius: 4px; }
   #secretBtn:hover { border-color: white; color: white; text-shadow: 0 0 10px white; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
 
-  /* =========================================
-     RETROPOCKET GAME
-  ========================================= */
   :root {
     --gb-lightest: #9bbc0f; --gb-light: #8bac0f; --gb-dark: #306230; --gb-darkest: #0f380f;
     --btn-ab: #c44040; --btn-ab-sh: #8a1c1c;
-    --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a; }
+    --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a; 
+  }
 
   #game-container {
-    display: none; /* Hidden until secret button is clicked */
+    display: none;
     width: 100%; height: 100%; position: absolute; inset: 0; z-index: 40;
     justify-content: center; align-items: center; background: #0a0a14;
-    font-family: 'Press Start 2P', monospace; }
+    font-family: 'Press Start 2P', monospace; 
+  }
   #game-container::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0a0a14 60%); z-index:-1; }
   #game-container::after { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:9999; }
 
@@ -317,9 +315,6 @@
   </div>
 
   <script>
-    /* =========================================
-       MAGITEK LOGIC & TRANSITION
-    ========================================= */
     const audioMagitek = document.getElementById("audioMagitek");
     const audioBoss    = document.getElementById("audioBoss");
     const magitekBtn   = document.getElementById("magitekButton");
@@ -364,7 +359,6 @@
     infoBtn.onclick  = () => infoPanel.classList.add("open");
     closeBtn.onclick = () => infoPanel.classList.remove("open");
     
-    // SECRET TRANSITION TO BOSS FIGHT
     secretBtn.onclick = async () => {
       audioMagitek.pause();
       try { 
@@ -380,15 +374,11 @@
       startRetroGame();
     };
 
-    /* =========================================
-       RETROPOCKET LOGIC
-    ========================================= */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const W = 202, H = 202;
     const C = { lightest: '#9bbc0f', light: '#8bac0f', dark: '#306230', darkest: '#0f380f' };
 
-    // --- NEW: 8-BIT SFX ENGINE ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
     function playSfx(freq, type, dur, vol=0.1) {
@@ -422,14 +412,12 @@
         el.addEventListener('pointerleave',e => { keys[k]=false; el.classList.remove('pressed'); });
       });
       document.addEventListener('keydown', e => {
-        // ADDED WASD HERE:
-        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a',x:'b',' ':'a',Enter:'start',Shift:'select'};
+        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a', x:'b', c:'y', y:'y', ' ':'a', Enter:'start', Shift:'select'};
         const k = m[e.key]||m[e.key?.toLowerCase()];
         if(k){keys[k]=true;jp[k]=true;}
       });
       document.addEventListener('keyup', e => {
-        // ADDED WASD HERE:
-        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a',x:'b',' ':'a',Enter:'start',Shift:'select'};
+        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a', x:'b', c:'y', y:'y', ' ':'a', Enter:'start', Shift:'select'};
         const k = m[e.key]||m[e.key?.toLowerCase()];
         if(k) keys[k]=false;
       });
@@ -463,23 +451,51 @@
     function flash(col,dur=0.15) { flashTimer=dur; flashCol=col; }
 
     const hero = {
-      x: W/2, y: H-28, w:10, h:16, hp: 100, maxHp:100, mp: 80, maxMp:80, speed: 90,
+      x: W/2, y: H-28, w:10, h:16, hp: 150, maxHp:150, mp: 100, maxMp:100, speed: 110,
       attacking: false, attackTimer:0, attackCooldown:0, invincible: false, invTimer:0,
       slashTrail: [], limitBreak: false, limitGauge:0, dead: false,
     };
     function drawHero() {
-      const { x,y,invincible,attacking } = hero;
+      const { x, y, invincible, attacking } = hero;
       if (invincible && Math.floor(t*20)%2===0) return;
+      
+      const bounce = attacking ? 0 : Math.sin(t*10)*1.5;
+      const hy = y + bounce;
+
+      ctx.save();
+      ctx.translate(x, hy - 10);
+      if (attacking) {
+         const prog = 1 - (hero.attackTimer / 0.3);
+         ctx.rotate(-Math.PI/4 + prog * Math.PI);
+         fr(0, -20, 4, 25, C.lightest);
+         fr(-2, -5, 8, 2, C.darkest);
+      } else {
+         ctx.rotate(-Math.PI/6);
+         fr(-2, -15, 5, 20, C.dark);
+         fr(-3, -15, 2, 20, C.light);
+         fr(-4, -2, 10, 2, C.darkest);
+      }
+      ctx.restore();
+
       const body = attacking ? C.lightest : C.dark;
-      fr(x-4,y-16,8,3,C.darkest); fr(x-2,y-19,4,3,C.darkest); fr(x-5,y-17,2,2,C.darkest); fr(x+3,y-17,2,2,C.darkest); fr(x-6,y-15,2,2,C.darkest); fr(x+4,y-15,2,2,C.darkest);
-      fr(x-3,y-13,6,6,C.lightest); fr(x-2,y-11,2,2,C.darkest); fr(x+0,y-11,2,2,C.darkest);
-      fr(x-4,y-7,8,9,body); fr(x-5,y-6,2,7,C.dark); fr(x+3,y-6,2,7,C.dark);
-      fr(x-3,y+2,3,6,C.darkest); fr(x+0,y+2,3,6,C.darkest);
+      fr(x-4,hy-16,8,3,C.darkest);
+      fr(x-2,hy-19,4,3,C.darkest);
+      fr(x-5,hy-17,2,2,C.darkest);
+      fr(x+3,hy-17,2,2,C.darkest);
+      fr(x-6,hy-15,2,2,C.darkest);
+      fr(x+4,hy-15,2,2,C.darkest);
+      fr(x-3,hy-13,6,6,C.lightest);
+      fr(x-2,hy-11,2,2,C.darkest);
+      fr(x+0,hy-11,2,2,C.darkest);
+      fr(x-4,hy-7,8,9,body);
+      fr(x-5,hy-6,2,7,C.dark);
+      fr(x+3,hy-6,2,7,C.dark);
+      fr(x-3,hy+2,3,6,C.darkest);
+      fr(x+0,hy+2,3,6,C.darkest);
+
       if (attacking) {
         hero.slashTrail.forEach(s => { ctx.globalAlpha=s.a; fr(s.x,s.y,s.w,s.h,C.lightest); ctx.globalAlpha=1; });
-        fr(x+4,y-18,3,26,C.darkest);
-        fr(x+3,y-18,5,3,C.dark);
-      } else { fr(x+4,y-14,3,22,C.darkest); fr(x+2,y-12,5,3,C.dark); }
+      }
     }
 
     const BOSS_MAXHP = 350;
@@ -588,23 +604,23 @@
           hero.attacking=true; hero.attackTimer=0.3; hero.attackCooldown=0.4; hero.slashTrail=[];
           for (let i=0;i<5;i++) hero.slashTrail.push({x:boss.x-15+i*6,y:boss.y-10+i*3,w:12,h:3,a:0.8-i*0.12});
           if (!boss.invincible && Math.abs(hero.x-boss.x)<40 && hero.y-boss.y<60) {
-            const dmg = hero.limitBreak ? 30 : 10 + Math.floor(Math.random()*6);
+            const dmg = hero.limitBreak ? 40 : 15 + Math.floor(Math.random()*10);
             boss.hp = Math.max(0, boss.hp-dmg); spawnParticles(boss.x,boss.y,dmg>15?8:4,C.lightest,80,0.4); flash(C.lightest,0.08); hero.limitGauge=Math.min(100,hero.limitGauge+5);
-            playSfx(400, 'square', 0.1); // Hit Sound
+            playSfx(400, 'square', 0.1); 
           } else {
-            playSfx(800, 'sine', 0.05, 0.05); // Miss Sound
+            playSfx(800, 'sine', 0.05, 0.05); 
           }
         }
         if (jp.b && hero.mp>=15) {
           hero.mp -= 15;
-          hero.attackCooldown=0.6; const dmg = boss.invincible ? 0 : 18+Math.floor(Math.random()*8);
+          hero.attackCooldown=0.6; const dmg = boss.invincible ? 0 : 30+Math.floor(Math.random()*10);
           boss.hp=Math.max(0,boss.hp-dmg); spawnParticles(boss.x,boss.y-10,12,C.dark,100,0.6); flash(C.light,0.1); hero.limitGauge=Math.min(100,hero.limitGauge+8);
-          playSfx(600, 'sawtooth', 0.15); // Magic Sound
+          playSfx(600, 'sawtooth', 0.15); 
         }
         if (jp.y && hero.limitGauge>=100 && !hero.limitBreak) {
           hero.limitBreak=true;
-          hero.limitGauge=0; hero.attacking=true; hero.attackTimer=0.8; hero.attackCooldown=0; const dmg = 55+Math.floor(Math.random()*15);
-          playSfx(800, 'square', 0.3, 0.2); // Limit Break Sound
+          hero.limitGauge=0; hero.attacking=true; hero.attackTimer=0.8; hero.attackCooldown=0; const dmg = 85+Math.floor(Math.random()*20);
+          playSfx(800, 'square', 0.3, 0.2); 
           if (!boss.invincible) {
             boss.hp=Math.max(0,boss.hp-dmg);
             spawnParticles(boss.x,boss.y,25,C.lightest,140,0.8); spawnParticles(boss.x,boss.y,15,C.darkest,80,0.6); flash(C.lightest,0.25);
@@ -696,7 +712,7 @@
       if (hero.invincible || hero.dead) return;
       hero.hp = Math.max(0, hero.hp - dmg); hero.invincible=true; hero.invTimer=0.6;
       spawnParticles(hero.x,hero.y,6,C.darkest,60,0.4); flash(C.dark,0.1); hero.limitGauge=Math.min(100,hero.limitGauge+10);
-      playSfx(150, 'sawtooth', 0.2, 0.15); // Hurt Sound
+      playSfx(150, 'sawtooth', 0.2, 0.15); 
     }
 
     let titleT=0;
@@ -713,8 +729,8 @@
       }
       txtC('◁ D-PAD TO MOVE ▷',168,4,C.dark); txtC('A=ATTACK  B=MAGIC',180,4,C.dark); txtC('Y=LIMIT BREAK',192,4,C.dark);
       if (jp.a || jp.start) {
-        playSfx(880, 'square', 0.1); // Start Sound
-        STATE='intro'; titleT=0; t=0; hero.x=W/2; hero.y=H-28; hero.hp=100; hero.mp=80; hero.attacking=false;
+        playSfx(880, 'square', 0.1); 
+        STATE='intro'; titleT=0; t=0; hero.x=W/2; hero.y=H-28; hero.hp=150; hero.mp=100; hero.attacking=false;
         hero.invincible=false; hero.dead=false; hero.limitGauge=0; hero.limitBreak=false;
         boss.hp=BOSS_MAXHP; boss.maxHp=BOSS_MAXHP; boss.phase=1; boss.state='idle'; boss.actionTimer=2.0; boss.dead=false; boss.wingSpan=0; boss.masamuneActive=false; boss.beamActive=false;
         boss.meteorList=[]; boss.novaActive=false; boss.invincible=false; boss.x=W/2; boss.floatY=0; particles=[]; flashTimer=0;
@@ -728,10 +744,8 @@
       for (let i=0;i<20;i++) { const sx=(i*77)%W; const sy=((i*47+Math.floor(introT*20))%H+H)%H; fr(sx,sy,1,1,C.dark);
       }
       const lineH=14; 
-      // Changed introT*22 to introT*12 for slower scrolling
       const startY=H/2-introCrawl.length*lineH/2 - introT*12; 
       introCrawl.forEach((line,i)=>{ const y=startY+i*lineH; if (y<-10||y>H+10) return; txtC(line,y,5,C.lightest); });
-      // Changed introT>3.5 to introT>9.0 for more reading time
       if (introT>9.0 || jp.a || jp.start) { playSfx(880, 'square', 0.1); STATE='fight'; t=0; particles=[]; } 
     }
 
