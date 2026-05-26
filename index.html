@@ -1,295 +1,366 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MAGITEK</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      background: black;
-      overflow: hidden;
-    }
-    #scroller {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-    img {
-      width: 100%;
-      display: block;
-    }
-    #vignette {
-      position: fixed;
-      inset: 0;
-      z-index: 5;
-      pointer-events: none;
-      background: radial-gradient(ellipse at center,
-        rgba(0,0,0,0) 0%,
-        rgba(0,0,0,0.5) 50%,
-        rgba(0,0,0,0.92) 80%,
-        rgba(0,0,0,1) 100%
-      );
-      opacity: 1;
-      transition: opacity 0.08s linear;
-    }
-    #magitekButton {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      background: transparent;
-      border: none;
-      outline: none;
-      cursor: pointer;
-      padding: 0;
-    }
-    #magitekButton svg {
-      display: block;
-      image-rendering: pixelated;
-      filter:
-        drop-shadow(0 0 6px rgba(255,255,255,0.6))
-        drop-shadow(0 0 18px rgba(255,255,255,0.25))
-        drop-shadow(0 0 40px rgba(180,180,255,0.15));
-      transition: filter 0.15s;
-    }
-    #magitekButton:hover svg {
-      filter:
-        drop-shadow(0 0 10px rgba(255,255,255,0.95))
-        drop-shadow(0 0 28px rgba(255,255,255,0.5))
-        drop-shadow(0 0 60px rgba(180,180,255,0.35));
-    }
-    @keyframes flicker {
-      0%,100% { opacity: 1; }
-      92%      { opacity: 1; }
-      93%      { opacity: 0.4; }
-      94%      { opacity: 1; }
-      97%      { opacity: 1; }
-      98%      { opacity: 0.2; }
-      99%      { opacity: 1; }
-    }
-    @keyframes cursor-blink {
-      0%,49%   { opacity: 1; }
-      50%,100% { opacity: 0; }
-    }
-    #btn-label {
-      animation: flicker 4s infinite;
-    }
-    #btn-cursor {
-      animation: cursor-blink 0.9s infinite;
-    }
-    #magitekButton::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 3px,
-        rgba(0,0,0,0.18) 3px,
-        rgba(0,0,0,0.18) 4px
-      );
-      pointer-events: none;
-      z-index: 1;
-    }
-    #infoButton {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 10;
-      background: transparent;
-      border: none;
-      outline: none;
-      cursor: pointer;
-      padding: 0;
-    }
-    #infoButton svg {
-      display: block;
-      image-rendering: pixelated;
-      filter:
-        drop-shadow(0 0 4px rgba(255,255,255,0.5))
-        drop-shadow(0 0 12px rgba(255,255,255,0.2));
-      transition: filter 0.15s;
-    }
-    #infoButton:hover svg {
-      filter:
-        drop-shadow(0 0 8px rgba(255,255,255,0.95))
-        drop-shadow(0 0 22px rgba(255,255,255,0.4));
-    }
-    #infoPanel {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      background: black;
-      align-items: center;
-      justify-content: center;
-    }
-    #infoPanel.open {
-      display: flex;
-    }
-    #infoPanel p {
-      font-family: 'Times New Roman', Times, serif;
-      font-size: clamp(18px, 3vw, 28px);
-      color: white;
-      font-style: italic;
-      letter-spacing: 0.04em;
-      text-align: center;
-      user-select: none;
-    }
-    #closeBtn {
-      position: absolute;
-      top: 20px;
-      right: 24px;
-      background: transparent;
-      border: none;
-      outline: none;
-      cursor: pointer;
-      font-family: 'Times New Roman', Times, serif;
-      font-size: 28px;
-      color: white;
-      line-height: 1;
-      opacity: 0.7;
-      transition: opacity 0.15s;
-    }
-    #closeBtn:hover {
-      opacity: 1;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAGITEK — Secret Boss</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+
+  /* =========================================
+     GLOBAL STYLES
+  ========================================= */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+    font-family: sans-serif;
+  }
+
+  /* =========================================
+     MAGITEK INTERFACE
+  ========================================= */
+  #magitek-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+  }
+  #scroller {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  #scroller img {
+    width: 100%;
+    display: block;
+  }
+  #vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.92) 80%, rgba(0,0,0,1) 100%);
+    opacity: 1;
+    transition: opacity 0.08s linear;
+  }
+  
+  #magitekButton {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20; background: transparent; border: none; outline: none; cursor: pointer; padding: 0;
+  }
+  #magitekButton svg {
+    display: block; image-rendering: pixelated;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.6)) drop-shadow(0 0 18px rgba(255,255,255,0.25)) drop-shadow(0 0 40px rgba(180,180,255,0.15));
+    transition: filter 0.15s;
+  }
+  #magitekButton:hover svg {
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)) drop-shadow(0 0 28px rgba(255,255,255,0.5)) drop-shadow(0 0 60px rgba(180,180,255,0.35));
+  }
+  #magitekButton::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
+  }
+
+  @keyframes flicker {
+    0%,100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.4; } 94% { opacity: 1; } 97% { opacity: 1; } 98% { opacity: 0.2; } 99% { opacity: 1; }
+  }
+  @keyframes cursor-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  #btn-label { animation: flicker 4s infinite; }
+  #btn-cursor { animation: cursor-blink 0.9s infinite; }
+
+  #infoButton {
+    position: fixed; bottom: 24px; right: 24px; z-index: 20; background: transparent; border: none; outline: none; cursor: pointer; padding: 0;
+  }
+  #infoButton svg {
+    display: block; image-rendering: pixelated;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.5)) drop-shadow(0 0 12px rgba(255,255,255,0.2)); transition: filter 0.15s;
+  }
+  #infoButton:hover svg { filter: drop-shadow(0 0 8px rgba(255,255,255,0.95)) drop-shadow(0 0 22px rgba(255,255,255,0.4)); }
+
+  #infoPanel {
+    display: none; position: fixed; inset: 0; z-index: 30; background: black;
+    flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  }
+  #infoPanel.open { display: flex; }
+  #infoPanel p {
+    font-family: 'Times New Roman', Times, serif; font-size: clamp(18px, 3vw, 28px); color: white;
+    font-style: italic; letter-spacing: 0.04em; text-align: center; user-select: none;
+  }
+  #closeBtn {
+    position: absolute; top: 20px; right: 24px; background: transparent; border: none; outline: none;
+    cursor: pointer; font-family: 'Times New Roman', Times, serif; font-size: 28px; color: white; line-height: 1;
+    opacity: 0.7; transition: opacity 0.15s;
+  }
+  #closeBtn:hover { opacity: 1; }
+
+  /* Secret Button */
+  #secretBtn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.2);
+    font-family: 'Times New Roman', Times, serif; font-size: 24px; padding: 5px 20px; cursor: pointer;
+    transition: all 0.3s ease; border-radius: 4px;
+  }
+  #secretBtn:hover { border-color: white; color: white; text-shadow: 0 0 10px white; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
+  /* =========================================
+     RETROPOCKET GAME
+  ========================================= */
+  :root {
+    --gb-lightest: #9bbc0f; --gb-light: #8bac0f; --gb-dark: #306230; --gb-darkest: #0f380f;
+    --btn-ab: #c44040; --btn-ab-sh: #8a1c1c;
+    --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a;
+  }
+
+  #game-container {
+    display: none; /* Hidden until secret button is clicked */
+    width: 100%; height: 100%; position: absolute; inset: 0; z-index: 40;
+    justify-content: center; align-items: center; background: #0a0a14;
+    font-family: 'Press Start 2P', monospace;
+  }
+  #game-container::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0a0a14 60%); z-index:-1; }
+  #game-container::after { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:9999; }
+
+  .phone-shell {
+    width: 360px; height: 740px; background: linear-gradient(160deg, #2a2a3e 0%, #1a1a2a 100%);
+    border-radius: 44px; border: 2px solid #3a3a5e;
+    box-shadow: 0 0 0 1px #0a0a1a, 0 30px 80px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
+    display: flex; flex-direction: column; align-items: center; overflow: hidden; position: relative;
+  }
+  .phone-notch {
+    width: 120px; height: 28px; background: #111; border-radius: 0 0 20px 20px;
+    display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0;
+  }
+  .phone-notch .camera { width:10px; height:10px; background:#1a1a2e; border-radius:50%; border:2px solid #333; }
+  .phone-notch .speaker { width:40px; height:5px; background:#111; border-radius:3px; border:1px solid #333; }
+  .phone-screen {
+    flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
+    padding: 8px 12px 8px; overflow: hidden;
+  }
+
+  .console-device {
+    width: 300px; background: linear-gradient(170deg, var(--body-color) 0%, #9a8a78 50%, var(--body-dark) 100%);
+    border-radius: 18px 18px 60px 60px;
+    box-shadow: 0 4px 0 var(--body-shadow), 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    display:flex; flex-direction:column; align-items:center; padding: 12px 16px 20px; position:relative; flex-shrink:0;
+  }
+  .console-label { font-size: 5px; color: var(--body-shadow); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+  .power-led {
+    position:absolute; top:16px; right:20px; width:6px; height:6px; background:#00ff44; border-radius:50%;
+    box-shadow: 0 0 6px #00ff44, 0 0 12px #00ff44; animation: led-pulse 2s infinite;
+  }
+  @keyframes led-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .screen-bezel {
+    width: 232px; background: #1a1a1a; border-radius: 8px; padding: 12px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.5); position:relative; margin-bottom:8px;
+  }
+  .screen-bezel::before {
+    content:'ONE WINGED ANGEL EDITION'; position:absolute; top:4px; left:50%; transform:translateX(-50%);
+    font-family:'Press Start 2P',monospace; font-size:3.5px; color:#444; letter-spacing:1px; white-space:nowrap;
+  }
+  .screen-inner {
+    width:208px; height:208px; background:var(--gb-lightest); border:3px solid var(--gb-darkest);
+    position:relative; overflow:hidden; image-rendering:pixelated;
+    box-shadow: inset 0 0 20px rgba(0,56,0,0.3), inset 0 0 4px rgba(0,0,0,0.4);
+  }
+  .screen-inner::after {
+    content:''; position:absolute; inset:0;
+    background-image: linear-gradient(rgba(0,0,0,0.03) 1px,transparent 1px), linear-gradient(90deg,rgba(0,0,0,0.03) 1px,transparent 1px);
+    background-size:2px 2px; pointer-events:none; z-index:10;
+  }
+  #gameCanvas { width:202px; height:202px; display:block; image-rendering:pixelated; }
+
+  .console-side-deco { display:flex; justify-content:space-between; width:100%; margin-bottom:4px; }
+  .vol-label { font-family:'VT323',monospace; font-size:10px; color:var(--body-shadow); }
+
+  .controls-row { display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:4px; gap:8px; }
+  .dpad { width:90px; height:90px; position:relative; flex-shrink:0; }
+  .dpad-center {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:30px; height:30px;
+    background:linear-gradient(135deg,#555,#333); border-radius:50%; z-index:2;
+  }
+  .dpad-arm {
+    position:absolute; background:linear-gradient(160deg,#555,#333); border-radius:3px; cursor:pointer; user-select:none;
+    box-shadow:0 3px 0 #1a1a1a,0 4px 6px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;
+    font-size:8px; color:#888; transition:transform 0.05s,box-shadow 0.05s;
+  }
+  .dpad-arm:active,.dpad-arm.pressed { background:linear-gradient(160deg,#444,#222); transform:translateY(1px)!important; box-shadow:0 1px 0 #1a1a1a!important; }
+  .dpad-up    { width:30px;height:30px;top:0;left:30px;border-radius:4px 4px 2px 2px; }
+  .dpad-down  { width:30px;height:30px;bottom:0;left:30px;border-radius:2px 2px 4px 4px; }
+  .dpad-left  { width:30px;height:30px;top:30px;left:0;border-radius:4px 2px 2px 4px; }
+  .dpad-right { width:30px;height:30px;top:30px;right:0;border-radius:2px 4px 4px 2px; }
+  .dpad-up::after{content:'▲'} .dpad-down::after{content:'▼'} .dpad-left::after{content:'◀'} .dpad-right::after{content:'▶'}
+
+  .btn-cluster { width:90px; height:90px; position:relative; flex-shrink:0; }
+  .btn-action {
+    position:absolute; width:28px; height:28px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#d45050,var(--btn-ab));
+    box-shadow:0 4px 0 var(--btn-ab-sh),0 5px 10px rgba(0,0,0,0.4);
+    cursor:pointer; user-select:none; display:flex; align-items:center; justify-content:center;
+    font-family:'Press Start 2P',monospace; font-size:7px; color:rgba(255,255,255,0.9); text-shadow:0 1px 2px rgba(0,0,0,0.5);
+    transition:transform 0.05s,box-shadow 0.05s; border:none; outline:none;
+  }
+  .btn-action:active,.btn-action.pressed { transform:translateY(3px)!important; box-shadow:0 1px 0 var(--btn-ab-sh),0 2px 4px rgba(0,0,0,0.4)!important; }
+  .btn-y{top:0;left:31px} .btn-x{top:31px;left:0} .btn-a{top:31px;right:0} .btn-b{bottom:0;left:31px}
+
+  .select-start-row { display:flex; gap:16px; margin-top:8px; }
+  .btn-pill {
+    width:50px; height:14px; border-radius:7px; background:linear-gradient(180deg,#555,#333);
+    box-shadow:0 3px 0 #1a1a1a,0 4px 6px rgba(0,0,0,0.4); cursor:pointer; user-select:none;
+    display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P',monospace; font-size:4px; color:#888;
+    transition:transform 0.05s,box-shadow 0.05s; transform:rotate(-10deg);
+  }
+  .btn-pill:active,.btn-pill.pressed { transform:rotate(-10deg) translateY(2px); box-shadow:0 1px 0 #1a1a1a; }
+  .speaker-grille { display:flex; gap:3px; margin-top:6px; }
+  .speaker-dot { width:3px; height:3px; background:var(--body-shadow); border-radius:50%; opacity:0.6; }
+</style>
 </head>
 <body>
-  <div id="scroller">
-    <img src="dancingmad.jpg" alt="">
+
+  <audio id="audioMagitek" src="dancingmad.mp3"></audio>
+  <audio id="audioBoss" src="owa.mp3" loop></audio>
+
+  <div id="magitek-container">
+    <div id="scroller">
+      <img src="dancingmad.jpg" alt="">
+    </div>
+    <div id="vignette"></div>
+
+    <button id="magitekButton" aria-label="MAGITEK">
+      <svg width="240" height="80" viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect x="8" y="8" width="224" height="64" fill="rgba(0,0,0,0.82)"/>
+        <g fill="#cccccc">
+          <rect x="16" y="0"   width="208" height="4"/><rect x="16" y="76"  width="208" height="4"/>
+          <rect x="0"  y="16"  width="4"   height="48"/><rect x="236" y="16" width="4"   height="48"/>
+          <rect x="8"  y="0"   width="8"   height="4"/><rect x="0"  y="8"   width="4"   height="8"/>
+          <rect x="4"  y="4"   width="4"   height="4"/><rect x="224" y="0"  width="8"   height="4"/>
+          <rect x="236" y="8"  width="4"   height="8"/><rect x="232" y="4"  width="4"   height="4"/>
+          <rect x="8"  y="76"  width="8"   height="4"/><rect x="0"  y="64"  width="4"   height="8"/>
+          <rect x="4"  y="72"  width="4"   height="4"/><rect x="224" y="76" width="8"   height="4"/>
+          <rect x="236" y="64" width="4"   height="8"/><rect x="232" y="72" width="4"   height="4"/>
+        </g>
+        <g fill="#444444">
+          <rect x="8" y="8" width="224" height="2"/><rect x="8" y="70" width="224" height="2"/>
+          <rect x="8" y="8" width="2" height="64"/><rect x="230" y="8" width="2" height="64"/>
+        </g>
+        <g fill="#eeeeee" opacity="0.15">
+          <rect x="10" y="10" width="220" height="1"/><rect x="10" y="10" width="1" height="60"/>
+        </g>
+        <g fill="#888888">
+          <rect x="12" y="12" width="4" height="4"/><rect x="224" y="12" width="4" height="4"/>
+          <rect x="12" y="64" width="4" height="4"/><rect x="224" y="64" width="4" height="4"/>
+        </g>
+        <g fill="#666666">
+          <rect x="108" y="2" width="24" height="2"/><rect x="108" y="76" width="24" height="2"/>
+        </g>
+        <g id="btn-label">
+          <text x="120" y="46" text-anchor="middle" dominant-baseline="middle" font-family="'Courier New', monospace" font-size="18" letter-spacing="8" fill="#ffffff" font-weight="bold">MAGITEK</text>
+        </g>
+        <rect id="btn-cursor" x="208" y="33" width="4" height="14" fill="#ffffff" opacity="0.7"/>
+        <g fill="#aaaaaa">
+          <rect x="18" y="36" width="4" height="4"/><rect x="22" y="32" width="4" height="4"/>
+          <rect x="22" y="40" width="4" height="4"/><rect x="26" y="28" width="4" height="4"/>
+          <rect x="26" y="44" width="4" height="4"/>
+        </g>
+      </svg>
+    </button>
   </div>
 
-  <div id="vignette"></div>
-
-  <button id="magitekButton" aria-label="MAGITEK">
-    <svg
-      width="240" height="80"
-      viewBox="0 0 240 80"
-      xmlns="http://www.w3.org/2000/svg"
-      shape-rendering="crispEdges"
-    >
-      <rect x="8" y="8" width="224" height="64" fill="rgba(0,0,0,0.82)"/>
-      <g fill="#cccccc">
-        <rect x="16" y="0"   width="208" height="4"/>
-        <rect x="16" y="76"  width="208" height="4"/>
-        <rect x="0"  y="16"  width="4"   height="48"/>
-        <rect x="236" y="16" width="4"   height="48"/>
-        <rect x="8"  y="0"   width="8"   height="4"/>
-        <rect x="0"  y="8"   width="4"   height="8"/>
-        <rect x="4"  y="4"   width="4"   height="4"/>
-        <rect x="224" y="0"  width="8"   height="4"/>
-        <rect x="236" y="8"  width="4"   height="8"/>
-        <rect x="232" y="4"  width="4"   height="4"/>
-        <rect x="8"  y="76"  width="8"   height="4"/>
-        <rect x="0"  y="64"  width="4"   height="8"/>
-        <rect x="4"  y="72"  width="4"   height="4"/>
-        <rect x="224" y="76" width="8"   height="4"/>
-        <rect x="236" y="64" width="4"   height="8"/>
-        <rect x="232" y="72" width="4"   height="4"/>
-      </g>
-      <g fill="#444444">
-        <rect x="8"   y="8"  width="224" height="2"/>
-        <rect x="8"   y="70" width="224" height="2"/>
-        <rect x="8"   y="8"  width="2"   height="64"/>
-        <rect x="230" y="8"  width="2"   height="64"/>
-      </g>
-      <g fill="#eeeeee" opacity="0.15">
-        <rect x="10" y="10" width="220" height="1"/>
-        <rect x="10" y="10" width="1"   height="60"/>
-      </g>
-      <g fill="#888888">
-        <rect x="12"  y="12" width="4" height="4"/>
-        <rect x="224" y="12" width="4" height="4"/>
-        <rect x="12"  y="64" width="4" height="4"/>
-        <rect x="224" y="64" width="4" height="4"/>
-      </g>
-      <g fill="#666666">
-        <rect x="108" y="2"  width="24" height="2"/>
-        <rect x="108" y="76" width="24" height="2"/>
-      </g>
-      <g id="btn-label">
-        <text
-          x="120" y="46"
-          text-anchor="middle"
-          dominant-baseline="middle"
-          font-family="'Courier New', monospace"
-          font-size="18"
-          letter-spacing="8"
-          fill="#ffffff"
-          font-weight="bold"
-        >MAGITEK</text>
-      </g>
-      <rect id="btn-cursor" x="208" y="33" width="4" height="14" fill="#ffffff" opacity="0.7"/>
-      <g fill="#aaaaaa">
-        <rect x="18" y="36" width="4" height="4"/>
-        <rect x="22" y="32" width="4" height="4"/>
-        <rect x="22" y="40" width="4" height="4"/>
-        <rect x="26" y="28" width="4" height="4"/>
-        <rect x="26" y="44" width="4" height="4"/>
-      </g>
-    </svg>
-  </button>
-
   <button id="infoButton" aria-label="Info">
-    <svg
-      width="40" height="40"
-      viewBox="0 0 40 40"
-      xmlns="http://www.w3.org/2000/svg"
-      shape-rendering="crispEdges"
-    >
+    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
       <rect x="4" y="4" width="32" height="32" fill="rgba(0,0,0,0.82)"/>
       <g fill="#cccccc">
-        <rect x="8"  y="0"  width="24" height="4"/>
-        <rect x="8"  y="36" width="24" height="4"/>
-        <rect x="0"  y="8"  width="4"  height="24"/>
-        <rect x="36" y="8"  width="4"  height="24"/>
-        <rect x="4"  y="4"  width="4"  height="4"/>
-        <rect x="32" y="4"  width="4"  height="4"/>
-        <rect x="4"  y="32" width="4"  height="4"/>
-        <rect x="32" y="32" width="4"  height="4"/>
+        <rect x="8"  y="0"  width="24" height="4"/><rect x="8"  y="36" width="24" height="4"/>
+        <rect x="0"  y="8"  width="4"  height="24"/><rect x="36" y="8"  width="4"  height="24"/>
+        <rect x="4"  y="4"  width="4"  height="4"/><rect x="32" y="4"  width="4"  height="4"/>
+        <rect x="4"  y="32" width="4"  height="4"/><rect x="32" y="32" width="4"  height="4"/>
       </g>
       <g fill="#444444">
-        <rect x="4"  y="4"  width="32" height="2"/>
-        <rect x="4"  y="34" width="32" height="2"/>
-        <rect x="4"  y="4"  width="2"  height="32"/>
-        <rect x="34" y="4"  width="2"  height="32"/>
+        <rect x="4" y="4" width="32" height="2"/><rect x="4" y="34" width="32" height="2"/>
+        <rect x="4" y="4" width="2" height="32"/><rect x="34" y="4" width="2" height="32"/>
       </g>
-      <text
-        x="20" y="22"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        font-family="'Times New Roman', serif"
-        font-size="18"
-        fill="#ffffff"
-        font-style="italic"
-      >i</text>
+      <text x="20" y="22" text-anchor="middle" dominant-baseline="middle" font-family="'Times New Roman', serif" font-size="18" fill="#ffffff" font-style="italic">i</text>
     </svg>
   </button>
 
   <div id="infoPanel">
     <button id="closeBtn">&#x2715;</button>
     <p>da mihi mortem iterum</p>
+    <button id="secretBtn">?</button>
   </div>
 
-  <audio id="audio" src="dancingmad.mp3"></audio>
+  <div id="game-container">
+    <div class="phone-shell">
+      <div class="phone-notch">
+        <div class="camera"></div>
+        <div class="speaker"></div>
+      </div>
+      <div class="phone-screen">
+        <div class="console-device">
+          <div class="console-label">RetroPocket — One Winged Angel</div>
+          <div class="power-led"></div>
+          <div class="screen-bezel">
+            <div class="screen-inner">
+              <canvas id="gameCanvas" width="202" height="202"></canvas>
+            </div>
+          </div>
+          <div class="console-side-deco">
+            <span class="vol-label">◁ VOL ▷</span>
+            <span class="vol-label">CONTRAST</span>
+          </div>
+          <div class="controls-row">
+            <div class="dpad">
+              <div class="dpad-arm dpad-up" id="btn-up"></div>
+              <div class="dpad-arm dpad-down" id="btn-down"></div>
+              <div class="dpad-arm dpad-left" id="btn-left"></div>
+              <div class="dpad-arm dpad-right" id="btn-right"></div>
+              <div class="dpad-center"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div class="select-start-row">
+                <div class="btn-pill" id="btn-select">SELECT</div>
+                <div class="btn-pill" id="btn-start">START</div>
+              </div>
+              <div class="speaker-grille">
+                <div class="speaker-dot"></div><div class="speaker-dot"></div>
+                <div class="speaker-dot"></div><div class="speaker-dot"></div>
+                <div class="speaker-dot"></div><div class="speaker-dot"></div>
+                <div class="speaker-dot"></div><div class="speaker-dot"></div>
+              </div>
+            </div>
+            <div class="btn-cluster">
+              <div class="btn-action btn-y" id="btn-y">Y</div>
+              <div class="btn-action btn-x" id="btn-x">X</div>
+              <div class="btn-action btn-a" id="btn-a">A</div>
+              <div class="btn-action btn-b" id="btn-b">B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const audio     = document.getElementById("audio");
-    const btn       = document.getElementById("magitekButton");
-    const scroller  = document.getElementById("scroller");
-    const infoBtn   = document.getElementById("infoButton");
-    const infoPanel = document.getElementById("infoPanel");
-    const closeBtn  = document.getElementById("closeBtn");
-    const vignette  = document.getElementById("vignette");
-
-    const TOTAL     = 18 * 60;
-    const SLOW_END  = 10 * 60 + 50;
-    const FAST_END  = TOTAL;
+    /* =========================================
+       MAGITEK LOGIC & TRANSITION
+    ========================================= */
+    const audioMagitek = document.getElementById("audioMagitek");
+    const audioBoss    = document.getElementById("audioBoss");
+    const magitekBtn   = document.getElementById("magitekButton");
+    const scroller     = document.getElementById("scroller");
+    const infoBtn      = document.getElementById("infoButton");
+    const infoPanel    = document.getElementById("infoPanel");
+    const closeBtn     = document.getElementById("closeBtn");
+    const vignette     = document.getElementById("vignette");
+    const secretBtn    = document.getElementById("secretBtn");
+    
+    const TOTAL = 18 * 60;
+    const SLOW_END = 10 * 60 + 50;
+    const FAST_END = TOTAL;
 
     scroller.scrollTop = 0;
 
@@ -306,18 +377,16 @@
       vignette.style.opacity = Math.max(0, opacity);
     }
 
-    btn.onclick = async () => {
-      btn.style.display = "none";
-      try { await audio.play(); }
-      catch (e) { alert("Audio bloccato dal browser"); }
-
+    magitekBtn.onclick = async () => {
+      magitekBtn.style.display = "none";
+      try { await audioMagitek.play(); } catch (e) { alert("Audio bloccato dal browser"); }
       const maxScroll = scroller.scrollHeight - scroller.clientHeight;
       scroller.scrollTop = maxScroll;
-
-      audio.addEventListener("timeupdate", () => {
-        if (!audio.duration) return;
-        const t = audio.currentTime;
-        const progress = t / audio.duration;
+      
+      audioMagitek.addEventListener("timeupdate", () => {
+        if (!audioMagitek.duration) return;
+        const t = audioMagitek.currentTime;
+        const progress = t / audioMagitek.duration;
         scroller.scrollTop = maxScroll * (1 - progress);
         updateVignette(t);
       });
@@ -325,6 +394,351 @@
 
     infoBtn.onclick  = () => infoPanel.classList.add("open");
     closeBtn.onclick = () => infoPanel.classList.remove("open");
+
+    // SECRET TRANSITION TO BOSS FIGHT
+    secretBtn.onclick = async () => {
+      audioMagitek.pause();
+      try { 
+        audioBoss.volume = 0.6;
+        await audioBoss.play(); 
+      } catch (e) { console.log("Boss audio prevented by browser", e); }
+
+      document.getElementById('magitek-container').style.display = 'none';
+      document.getElementById('infoButton').style.display = 'none';
+      infoPanel.classList.remove('open');
+      
+      document.getElementById('game-container').style.display = 'flex';
+      startRetroGame();
+    };
+
+    /* =========================================
+       RETROPOCKET LOGIC
+    ========================================= */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 202, H = 202;
+    const C = { lightest: '#9bbc0f', light: '#8bac0f', dark: '#306230', darkest: '#0f380f' };
+
+    const keys = {}; const jp = {};
+    function setupInput() {
+      const map = [
+        ['btn-up','up'],['btn-down','down'],['btn-left','left'],['btn-right','right'],
+        ['btn-a','a'],['btn-b','b'],['btn-x','x'],['btn-y','y'],
+        ['btn-select','select'],['btn-start','start'],
+      ];
+      map.forEach(([id,k]) => {
+        const el = document.getElementById(id);
+        el.addEventListener('pointerdown', e => { e.preventDefault(); keys[k]=true; jp[k]=true; el.classList.add('pressed'); });
+        el.addEventListener('pointerup',   e => { e.preventDefault(); keys[k]=false; el.classList.remove('pressed'); });
+        el.addEventListener('pointerleave',e => { keys[k]=false; el.classList.remove('pressed'); });
+      });
+      document.addEventListener('keydown', e => {
+        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', z:'a',x:'b',' ':'a',Enter:'start',Shift:'select'};
+        const k = m[e.key]||m[e.key?.toLowerCase()];
+        if(k){keys[k]=true;jp[k]=true;}
+      });
+      document.addEventListener('keyup', e => {
+        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', z:'a',x:'b',' ':'a',Enter:'start',Shift:'select'};
+        const k = m[e.key]||m[e.key?.toLowerCase()];
+        if(k) keys[k]=false;
+      });
+    }
+
+    function clearJP() { Object.keys(jp).forEach(k=>jp[k]=false); }
+
+    const fr = (x,y,w,h,c) => { ctx.fillStyle=c; ctx.fillRect(x,y,w,h); };
+    const clr = (c=C.lightest) => fr(0,0,W,H,c);
+    function txt(s,x,y,sz=6,col=C.darkest,font='Press Start 2P') { ctx.font=`${sz}px "${font}"`; ctx.fillStyle=col; ctx.fillText(s,x,y); }
+    function txtC(s,y,sz=6,col=C.darkest) { ctx.font=`${sz}px "Press Start 2P"`; ctx.fillStyle=col; ctx.fillText(s,(W-ctx.measureText(s).width)/2,y); }
+
+    let STATE = 'title'; let t = 0; let frameN = 0;
+    let particles = [];
+    function spawnParticles(x,y,n,col,speed=60,life=0.5) {
+      for (let i=0;i<n;i++) {
+        const a = Math.random()*Math.PI*2; const sp = speed*(0.5+Math.random());
+        particles.push({ x,y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, col, life, maxLife:life, size:Math.floor(Math.random()*3)+1 });
+      }
+    }
+    function updateParticles(dt) {
+      particles = particles.filter(p => {
+        p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=80*dt; p.life-=dt;
+        const a = p.life/p.maxLife; ctx.globalAlpha=a; fr(p.x,p.y,p.size,p.size,p.col); ctx.globalAlpha=1;
+        return p.life>0;
+      });
+    }
+
+    let flashTimer=0, flashCol=C.lightest;
+    function flash(col,dur=0.15) { flashTimer=dur; flashCol=col; }
+
+    const hero = {
+      x: W/2, y: H-28, w:10, h:16, hp: 100, maxHp:100, mp: 80, maxMp:80, speed: 90,
+      attacking: false, attackTimer:0, attackCooldown:0, invincible: false, invTimer:0,
+      slashTrail: [], limitBreak: false, limitGauge:0, dead: false,
+    };
+    function drawHero() {
+      const { x,y,invincible,attacking } = hero;
+      if (invincible && Math.floor(t*20)%2===0) return;
+      const body = attacking ? C.lightest : C.dark;
+      fr(x-4,y-16,8,3,C.darkest); fr(x-2,y-19,4,3,C.darkest); fr(x-5,y-17,2,2,C.darkest); fr(x+3,y-17,2,2,C.darkest); fr(x-6,y-15,2,2,C.darkest); fr(x+4,y-15,2,2,C.darkest);
+      fr(x-3,y-13,6,6,C.lightest); fr(x-2,y-11,2,2,C.darkest); fr(x+0,y-11,2,2,C.darkest);
+      fr(x-4,y-7,8,9,body); fr(x-5,y-6,2,7,C.dark); fr(x+3,y-6,2,7,C.dark);
+      fr(x-3,y+2,3,6,C.darkest); fr(x+0,y+2,3,6,C.darkest);
+      if (attacking) {
+        hero.slashTrail.forEach(s => { ctx.globalAlpha=s.a; fr(s.x,s.y,s.w,s.h,C.lightest); ctx.globalAlpha=1; });
+        fr(x+4,y-18,3,26,C.darkest); fr(x+3,y-18,5,3,C.dark);
+      } else { fr(x+4,y-14,3,22,C.darkest); fr(x+2,y-12,5,3,C.dark); }
+    }
+
+    const BOSS_MAXHP = 350; const BOSS_MAXHP2 = 500;
+    const boss = {
+      x: W/2, y: 65, hp: BOSS_MAXHP, maxHp: BOSS_MAXHP, phase: 1, state: 'idle', stateTimer: 0, actionTimer: 1.5, dead: false,
+      wingSpan: 0, wingAngle: 0, beamX: 0, beamActive: false, meteorList: [], masamuneAngle: 0, masamuneActive: false,
+      slashX: W/2, slashDir: 1, invincible: false, phase2Transition: false, novaTimer: 0, novaActive: false, floatY: 0,
+    };
+    function drawBoss() {
+      const bx = boss.x, by = boss.y + boss.floatY; const p2 = boss.phase === 2;
+      const ws = boss.wingSpan;
+      if (ws > 0) {
+        ctx.save(); ctx.translate(bx+4, by-10);
+        const wColor = p2 ? C.darkest : C.dark; const wLight = p2 ? C.dark : C.light;
+        for (let f=0;f<6;f++) {
+          const fa = (boss.wingAngle + f*0.28)*ws; const fl = (30+f*8)*ws;
+          ctx.save(); ctx.rotate(fa); fr(0,0,3,fl,wColor); fr(1,0,2,fl-4,wLight); ctx.restore();
+        }
+        for (let f=0;f<4;f++) {
+          const fa = (boss.wingAngle - 0.2 + f*0.18)*ws; const fl = (18+f*5)*ws;
+          ctx.save(); ctx.rotate(fa); fr(0,0,2,fl,wColor); ctx.restore();
+        }
+        ctx.restore();
+      }
+      const hairCol = p2 ? C.light : C.lightest;
+      fr(bx-2,by+5,4,28,hairCol); fr(bx-3,by+10,2,20,hairCol); fr(bx+1,by+12,3,18,hairCol); fr(bx-1,by+32,2,10,hairCol);
+      fr(bx-6,by-8,12,24,C.darkest); fr(bx-5,by-7,10,22,p2 ? C.dark : C.darkest);
+      fr(bx-6,by-8,3,14,C.darkest); fr(bx+3,by-8,3,14,C.darkest);
+      fr(bx-8,by-10,5,5,hairCol); fr(bx+3,by-10,5,5,hairCol);
+      fr(bx-4,by-22,8,8,C.lightest); fr(bx-5,by-25,10,5,hairCol); fr(bx-3,by-27,6,4,hairCol);
+      fr(bx-3,by-19,2,2,C.dark); fr(bx+1,by-19,2,2,C.dark); fr(bx-1,by-15,2,1,C.light);
+      if (!boss.masamuneActive) {
+        ctx.save(); ctx.translate(bx-7, by-14); ctx.rotate(-0.15);
+        fr(0,0,2,64,C.lightest); fr(-1,0,4,4,C.dark); fr(-1,0,1,64,C.dark); ctx.restore();
+      }
+      if (p2) { ctx.globalAlpha=0.15+0.1*Math.sin(t*4); fr(bx-20,by-30,40,60,C.darkest); ctx.globalAlpha=1; }
+      if (boss.invincible && Math.floor(t*15)%2===0) { ctx.globalAlpha=0.5; fr(bx-12,by-30,24,60,C.lightest); ctx.globalAlpha=1; }
+    }
+
+    function bossChooseAttack() {
+      const pool = boss.phase===1 ? ['slash','slash','beam','masamune','meteor'] : ['slash','beam','masamune','meteor','meteor','supernova'];
+      boss.state = pool[Math.floor(Math.random()*pool.length)];
+      boss.stateTimer = 0; boss.actionTimer = 1.2 + Math.random()*0.8;
+      if (boss.state==='masamune') boss.masamuneActive=true;
+      if (boss.state==='supernova') { boss.novaActive=true; boss.novaTimer=0; }
+      if (boss.state==='meteor') {
+        for (let i=0;i<(boss.phase===2?5:3);i++) {
+          boss.meteorList.push({ x: 20+Math.random()*(W-40), y:-20-Math.random()*30, tx: hero.x-10+Math.random()*20, speed: 60+Math.random()*40, size: 5+Math.floor(Math.random()*4), delay: i*0.2 });
+        }
+      }
+      if (boss.state==='slash') { boss.slashX = hero.x + (Math.random()-0.5)*40; boss.slashDir = boss.slashX < W/2 ? 1 : -1; }
+      if (boss.state==='beam') { boss.beamX = hero.x; boss.beamActive = true; }
+    }
+
+    function drawHUD() {
+      fr(0,0,W,20,C.darkest);
+      txt('HP',2,9,5,C.lightest); fr(16,2,80,8,C.dark); fr(16,2,Math.max(0,Math.floor(80*(hero.hp/hero.maxHp))),8,C.lightest); fr(16,2,80,2,'rgba(255,255,255,0.15)');
+      txt('MP',2,18,4,C.light); fr(16,12,80,5,C.dark); fr(16,12,Math.max(0,Math.floor(80*(hero.mp/hero.maxMp))),5,C.light);
+      txt('SEP',W-50,9,5,C.lightest); const bHpW = 44; fr(W-bHpW-2,2,bHpW,8,C.dark);
+      const bHpFill = Math.max(0,Math.floor(bHpW*(boss.hp/boss.maxHp))); const bHpCol = boss.phase===2 ? C.dark : C.light;
+      fr(W-bHpW-2,2,bHpFill,8,bHpCol); fr(W-bHpW-2,2,bHpFill,2,'rgba(255,255,255,0.15)');
+      const lg = Math.floor(50*(hero.limitGauge/100)); fr(0,195,50,7,C.dark); fr(0,195,lg,7,C.lightest); txt('LIMIT',2,202,4,C.light);
+    }
+    function drawBottomBar() { fr(0,186,W,16,C.darkest); txt('A=ATK  B=MAGIC  Y=LIMIT',2,196,4,C.light); }
+
+    function drawBackground() {
+      clr(C.light); fr(0,0,W,H/2,C.lightest);
+      const starCount = boss.phase===2 ? 30 : 15;
+      for (let i=0;i<starCount;i++) { const sx=(i*67+13)%W, sy=(i*43+7)%(H/2); const blink = Math.sin(t*3+i*1.7)>0.5; fr(sx,sy,blink?2:1,blink?2:1,C.dark); }
+      fr(0,H-18,W,18,C.dark); fr(0,H-18,W,3,C.darkest);
+      for (let i=0;i<8;i++) { const gx = i*(W/7)-4; const gh = 8+i%3*4; fr(gx,H-18-gh,6,gh,i%2===0?C.darkest:C.dark); fr(gx+1,H-18-gh-3,4,4,C.lightest); }
+      fr(4,40,10,H-58,C.dark); fr(W-14,55,10,H-73,C.dark); fr(4,40,10,5,C.darkest); fr(W-14,55,10,5,C.darkest);
+      if (boss.phase===2) { for (let i=0;i<5;i++) { const dx=((i*80+t*15*(i%2===0?1:-1))%W+W)%W; const dy=20+i*12+Math.sin(t*1.5+i)*4; fr(dx,dy,6+i%3*2,4,C.dark); } }
+    }
+
+    function updateFight(dt) {
+      t += dt; frameN++;
+      boss.wingAngle = 0.3 + Math.sin(t*1.5)*0.15; boss.floatY = Math.sin(t*1.2)*4;
+      if (boss.wingSpan < 1) boss.wingSpan = Math.min(1, boss.wingSpan+dt*0.8);
+
+      if (!hero.dead) {
+        const spd = hero.speed * (hero.limitBreak ? 1.5 : 1);
+        if (keys.left  && hero.x > 12)   hero.x -= spd*dt;
+        if (keys.right && hero.x < W-12) hero.x += spd*dt;
+      }
+      if (hero.attackCooldown > 0) hero.attackCooldown -= dt;
+      if (hero.invincible) { hero.invTimer -= dt; if(hero.invTimer<=0) hero.invincible=false; }
+      if (hero.attacking) {
+        hero.attackTimer -= dt; hero.slashTrail.forEach(s=>{s.a-=dt*4;}); hero.slashTrail=hero.slashTrail.filter(s=>s.a>0);
+        if (hero.attackTimer<=0) { hero.attacking=false; hero.limitBreak=false; }
+      }
+
+      if (!hero.dead && !hero.attacking) {
+        if (jp.a && hero.attackCooldown<=0) {
+          hero.attacking=true; hero.attackTimer=0.3; hero.attackCooldown=0.4; hero.slashTrail=[];
+          for (let i=0;i<5;i++) hero.slashTrail.push({x:boss.x-15+i*6,y:boss.y-10+i*3,w:12,h:3,a:0.8-i*0.12});
+          if (!boss.invincible && Math.abs(hero.x-boss.x)<40 && hero.y-boss.y<60) {
+            const dmg = hero.limitBreak ? 30 : 10 + Math.floor(Math.random()*6);
+            boss.hp = Math.max(0, boss.hp-dmg); spawnParticles(boss.x,boss.y,dmg>15?8:4,C.lightest,80,0.4); flash(C.lightest,0.08); hero.limitGauge=Math.min(100,hero.limitGauge+5);
+          }
+        }
+        if (jp.b && hero.mp>=15) {
+          hero.mp -= 15; hero.attackCooldown=0.6; const dmg = boss.invincible ? 0 : 18+Math.floor(Math.random()*8);
+          boss.hp=Math.max(0,boss.hp-dmg); spawnParticles(boss.x,boss.y-10,12,C.dark,100,0.6); flash(C.light,0.1); hero.limitGauge=Math.min(100,hero.limitGauge+8);
+        }
+        if (jp.y && hero.limitGauge>=100 && !hero.limitBreak) {
+          hero.limitBreak=true; hero.limitGauge=0; hero.attacking=true; hero.attackTimer=0.8; hero.attackCooldown=0; const dmg = 55+Math.floor(Math.random()*15);
+          if (!boss.invincible) {
+            boss.hp=Math.max(0,boss.hp-dmg); spawnParticles(boss.x,boss.y,25,C.lightest,140,0.8); spawnParticles(boss.x,boss.y,15,C.darkest,80,0.6); flash(C.lightest,0.25);
+          }
+        }
+      }
+      if (hero.mp < hero.maxMp) hero.mp = Math.min(hero.maxMp, hero.mp+dt*3);
+
+      if (boss.hp <= 0 && boss.phase===1) {
+        boss.phase=2; boss.hp=BOSS_MAXHP2; boss.maxHp=BOSS_MAXHP2; boss.invincible=true; boss.invTimer=2.5; boss.state='idle'; boss.actionTimer=2.5;
+        flash(C.darkest,0.4); spawnParticles(boss.x,boss.y,30,C.dark,120,1.5); STATE='phase2';
+        setTimeout(()=>{ if(STATE==='phase2') STATE='fight'; },2500); return;
+      }
+      if (boss.hp <= 0 && boss.phase===2 && !boss.dead) {
+        boss.dead=true; spawnParticles(boss.x,boss.y,40,C.lightest,160,2.0); flash(C.lightest,0.5); setTimeout(()=>{ STATE='victory'; },2000); return;
+      }
+
+      if (!boss.dead && !boss.invincible) {
+        boss.actionTimer -= dt; boss.stateTimer += dt;
+        if (boss.state==='idle' && boss.actionTimer<=0) bossChooseAttack();
+        if (boss.state==='slash') {
+          if (boss.stateTimer < 0.4) { boss.x += (boss.slashX-boss.x)*5*dt; } else {
+            fr(boss.slashX-4, boss.y, 8, H-boss.y-18, C.darkest); ctx.globalAlpha=0.4; fr(boss.slashX-8,boss.y,16,H-boss.y-18,C.dark); ctx.globalAlpha=1;
+            if (!hero.invincible && Math.abs(hero.x-boss.slashX)<12) { heroTakeDamage(boss.phase===2?14:9); }
+            if (boss.stateTimer>0.8) { boss.state='idle'; boss.actionTimer=0.8; boss.masamuneActive=false; boss.x=W/2; }
+          }
+        }
+        if (boss.state==='beam') {
+          if (boss.stateTimer<0.5) { ctx.globalAlpha=boss.stateTimer/0.5*0.4; fr(boss.beamX-10,boss.y,20,H,C.lightest); ctx.globalAlpha=1; } else {
+            fr(boss.beamX-5,0,10,H,C.darkest); fr(boss.beamX-2,0,4,H,C.lightest);
+            if (!hero.invincible && Math.abs(hero.x-boss.beamX)<8) heroTakeDamage(boss.phase===2?18:12);
+            if (boss.stateTimer>1.2) { boss.state='idle'; boss.actionTimer=1.0; boss.beamActive=false; }
+          }
+        }
+        if (boss.state==='masamune') {
+          boss.masamuneAngle += dt*(boss.phase===2?6:4); ctx.save(); ctx.translate(boss.x, boss.y); ctx.rotate(boss.masamuneAngle);
+          fr(-2,-68,3,72,C.lightest); fr(-3,-68,5,4,C.dark); ctx.restore();
+          const mTip = { x: boss.x+Math.sin(boss.masamuneAngle)*68, y: boss.y-Math.cos(boss.masamuneAngle)*68 };
+          if (!hero.invincible && Math.abs(hero.x-mTip.x)<14 && Math.abs(hero.y-mTip.y)<14) heroTakeDamage(boss.phase===2?16:10);
+          if (boss.stateTimer>2.0) { boss.state='idle'; boss.actionTimer=1.2; boss.masamuneActive=false; boss.masamuneAngle=0; }
+        }
+        if (boss.state==='meteor') {
+          boss.meteorList=boss.meteorList.filter(m => {
+            if (m.delay>0) { m.delay-=dt; return true; } m.y += m.speed*dt;
+            const prog=Math.min(1,m.y/m.tx); ctx.globalAlpha=0.3+prog*0.3; fr(m.tx-m.size/2,H-22,m.size,3,C.darkest); ctx.globalAlpha=1;
+            ctx.fillStyle=C.darkest; ctx.beginPath(); ctx.arc(m.x,m.y,m.size,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle=C.dark; ctx.beginPath(); ctx.arc(m.x-1,m.y-1,m.size-2,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle=C.light; ctx.globalAlpha=0.5; fr(m.x-1,m.y-m.size*2,2,m.size*2,C.lightest); ctx.globalAlpha=1;
+            if (m.y > H-22) { spawnParticles(m.x,H-22,8,C.dark,70,0.5); if (!hero.invincible && Math.abs(hero.x-m.x)<14) heroTakeDamage(boss.phase===2?20:13); return false; } return true;
+          });
+          if (boss.meteorList.length===0 && boss.stateTimer>1.5) { boss.state='idle'; boss.actionTimer=1.0; }
+        }
+        if (boss.state==='supernova') {
+          boss.novaTimer+=dt; const rings = Math.min(5, Math.floor(boss.novaTimer/0.3)+1);
+          for (let r=0;r<rings;r++) {
+            const radius=(r+1)*18+boss.novaTimer*20; ctx.strokeStyle=r%2===0?C.darkest:C.dark; ctx.lineWidth=3+r;
+            ctx.globalAlpha=Math.max(0,1-boss.novaTimer/2); ctx.beginPath(); ctx.arc(boss.x,boss.y,radius,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
+          }
+          if (boss.novaTimer>0.8&&boss.novaTimer<1.6&&!hero.invincible) heroTakeDamage(25*dt);
+          if (boss.novaTimer>2.0) { boss.state='idle'; boss.actionTimer=1.5; boss.novaActive=false; }
+        }
+      }
+      if (hero.hp<=0&&!hero.dead) { hero.dead=true; spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); setTimeout(()=>{ STATE='gameover'; },1500); }
+
+      drawBackground(); drawBoss(); drawHero(); updateParticles(dt); drawHUD(); drawBottomBar();
+      if (flashTimer>0) { flashTimer-=dt; ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
+      if (STATE==='phase2') {
+        fr(0,0,W,H,C.darkest); ctx.globalAlpha=0.8; const blink = Math.floor(t*4)%2===0;
+        if (blink) { txtC('SEPHIROTH',70,8,C.lightest); txtC('ENRAGES!',90,7,C.light); txtC('ONE WINGED',115,6,C.dark); txtC('ANGEL',130,10,C.dark); } ctx.globalAlpha=1;
+      }
+    }
+
+    function heroTakeDamage(dmg) {
+      if (hero.invincible || hero.dead) return; hero.hp = Math.max(0, hero.hp - dmg); hero.invincible=true; hero.invTimer=0.6;
+      spawnParticles(hero.x,hero.y,6,C.darkest,60,0.4); flash(C.dark,0.1); hero.limitGauge=Math.min(100,hero.limitGauge+10);
+    }
+
+    let titleT=0;
+    function updateTitle(dt) {
+      titleT+=dt; t+=dt; clr(C.darkest);
+      for (let i=0;i<40;i++) { const sx=(i*67+13+Math.floor(titleT*8))%W; const sy=(i*43+7)%H; const blink=Math.sin(titleT*2+i)>0.3; fr(sx,sy,blink?2:1,1,i%4===0?C.lightest:C.dark); }
+      fr(0,30,W,60,C.darkest); fr(2,32,W-4,56,C.dark); txtC('RETROPOCKET',42,6,C.light); txtC('ONE WINGED',57,8,C.lightest); txtC('ANGEL',70,10,C.lightest); fr(10,78,W-20,2,C.light);
+      const bx=W/2, by=115; fr(bx-5,by-25,10,5,C.light); fr(bx-3,by-20,6,8,C.lightest); fr(bx-5,by-12,10,18,C.dark);
+      for (let f=0;f<5;f++) { const fa=0.3+f*0.25+Math.sin(titleT*1.2)*0.1; const fl=16+f*5; ctx.save(); ctx.translate(bx+3,by-15); ctx.rotate(fa); fr(0,0,2,fl,f%2===0?C.darkest:C.dark); ctx.restore(); }
+      if (Math.floor(titleT*2)%2===0) { txtC('PRESS A TO FIGHT',155,5,C.lightest); }
+      txtC('◁ D-PAD TO MOVE ▷',168,4,C.dark); txtC('A=ATTACK  B=MAGIC',180,4,C.dark); txtC('Y=LIMIT BREAK',192,4,C.dark);
+      if (jp.a || jp.start) {
+        STATE='intro'; titleT=0; t=0; hero.x=W/2; hero.y=H-28; hero.hp=100; hero.mp=80; hero.attacking=false; hero.invincible=false; hero.dead=false; hero.limitGauge=0; hero.limitBreak=false;
+        boss.hp=BOSS_MAXHP; boss.maxHp=BOSS_MAXHP; boss.phase=1; boss.state='idle'; boss.actionTimer=2.0; boss.dead=false; boss.wingSpan=0; boss.masamuneActive=false; boss.beamActive=false;
+        boss.meteorList=[]; boss.novaActive=false; boss.invincible=false; boss.x=W/2; boss.floatY=0; particles=[]; flashTimer=0;
+      }
+    }
+
+    let introT=0; const introCrawl=['2000 YEARS AGO,','HE FELL FROM','THE SKY...','','NOW SEPHIROTH','RISES AGAIN','IN THE NORTHERN','CRATER.','','YOU MUST','STOP HIM.'];
+    function updateIntro(dt) {
+      introT+=dt; t+=dt; fr(0,0,W,H,C.darkest);
+      for (let i=0;i<20;i++) { const sx=(i*77)%W; const sy=((i*47+Math.floor(introT*20))%H+H)%H; fr(sx,sy,1,1,C.dark); }
+      const lineH=14; const startY=H/2-introCrawl.length*lineH/2 - introT*22;
+      introCrawl.forEach((line,i)=>{ const y=startY+i*lineH; if (y<-10||y>H+10) return; txtC(line,y,5,C.lightest); });
+      if (introT>3.5 || jp.a || jp.start) { STATE='fight'; t=0; particles=[]; }
+    }
+
+    let victoryT=0;
+    function updateVictory(dt) {
+      victoryT+=dt; t+=dt; clr(C.lightest);
+      for (let i=0;i<20;i++) { const sx=((i*97+Math.floor(victoryT*30))%W+W)%W; const sy=((i*61+Math.floor(victoryT*15))%(H/2)+H/4); fr(sx,sy,3,3,i%2===0?C.dark:C.darkest); }
+      fr(0,50,W,90,C.darkest); fr(2,52,W-4,86,C.dark); txtC('SEPHIROTH',70,6,C.light); txtC('DEFEATED!',84,8,C.lightest); fr(10,96,W-20,2,C.light); txtC('THE PLANET IS SAVED',110,4,C.light);
+      const hx=W/2, hy=148; fr(hx-4,hy-20,8,3,C.darkest); fr(hx-3,hy-17,6,6,C.lightest); fr(hx-4,hy-11,8,9,C.dark); fr(hx+4,hy-18,3,22,C.darkest);
+      if (Math.floor(victoryT*2)%2===0) txtC('A = PLAY AGAIN',190,4,C.darkest);
+      if (jp.a || jp.start) { STATE='title'; victoryT=0; titleT=0; }
+    }
+
+    let goT=0;
+    function updateGameOver(dt) {
+      goT+=dt; t+=dt; fr(0,0,W,H,C.darkest);
+      for (let i=0;i<5;i++) { ctx.globalAlpha=0.05+i*0.04; fr(0,i*40,W,40,C.dark); ctx.globalAlpha=1; }
+      fr(0,60,W,80,C.darkest); fr(2,62,W-4,76,C.dark); txtC('YOU FELL...',76,6,C.lightest); txtC('SEPHIROTH',92,5,C.light); txtC('LAUGHS.',104,5,C.dark);
+      for (let f=0;f<6;f++) { const fa=(0.4+f*0.28)+Math.sin(goT*1.5)*0.1; const fl=(24+f*8); ctx.save(); ctx.translate(W/2+3,150); ctx.rotate(fa); fr(0,0,3,fl,f%2===0?C.dark:C.light); ctx.restore(); }
+      fr(W/2-5,125,10,8,C.lightest); fr(W/2-8,133,16,20,C.dark);
+      if (Math.floor(goT*2)%2===0) txtC('A = TRY AGAIN',190,4,C.light);
+      if (jp.a || jp.start) { STATE='title'; goT=0; titleT=0; }
+    }
+
+    let lastTime=0;
+    let gameLoopStarted = false;
+
+    function loop(ts) {
+      const dt=Math.min((ts-lastTime)/1000,0.05); lastTime=ts; ctx.imageSmoothingEnabled=false;
+      switch(STATE) {
+        case 'title':    updateTitle(dt);    break;
+        case 'intro':    updateIntro(dt);    break;
+        case 'fight':
+        case 'phase2':   updateFight(dt);    break;
+        case 'victory':  updateVictory(dt);  break;
+        case 'gameover': updateGameOver(dt); break;
+      }
+      clearJP();
+      requestAnimationFrame(loop);
+    }
+
+    function startRetroGame() {
+      if (gameLoopStarted) return;
+      gameLoopStarted = true;
+      setupInput();
+      requestAnimationFrame(ts => { lastTime=ts; requestAnimationFrame(loop); });
+    }
   </script>
 </body>
 </html>
