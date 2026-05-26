@@ -462,6 +462,7 @@
       x: W/2, y: H-28, w:10, h:16, hp: 150, maxHp:150, mp: 100, maxMp:100, speed: 110,
       attacking: false, attackTimer:0, attackCooldown:0, invincible: false, invTimer:0,
       slashTrail: [], limitBreak: false, limitGauge:0, dead: false,
+      slashFx: { active: false, timer: 0 } // Tracks if hero is being slashed visually
     };
 
     function drawHero() {
@@ -496,6 +497,24 @@
 
       if (attacking) {
         hero.slashTrail.forEach(s => { ctx.globalAlpha=s.a; fr(s.x,s.y,s.w,s.h,C.lightest); ctx.globalAlpha=1; });
+      }
+
+      // Draw Player Damage Slash FX
+      if (hero.slashFx && hero.slashFx.active) {
+        ctx.save();
+        ctx.translate(x, hy - 10);
+        const prog = hero.slashFx.timer / 0.25; 
+        ctx.globalAlpha = prog;
+        
+        ctx.rotate(Math.PI / 4);
+        fr(-15, -2, 30, 4, C.lightest);
+        fr(-15, -1, 30, 2, C.darkest);
+        
+        ctx.rotate(-Math.PI / 2);
+        fr(-15, -2, 30, 4, C.lightest);
+        fr(-15, -1, 30, 2, C.darkest);
+        
+        ctx.restore();
       }
     }
 
@@ -533,17 +552,23 @@
       fr(bx-4,by-22,8,8,C.lightest); fr(bx-5,by-25,10,5,hairCol); fr(bx-3,by-27,6,4,hairCol);
       fr(bx-3,by-19,2,2,C.dark); fr(bx+1,by-19,2,2,C.dark); fr(bx-1,by-15,2,1,C.light);
       
-      // Animated Idle Sword
-      if (!boss.masamuneActive) {
+      // Animated Sword
+      if (boss.masamuneActive) {
+        ctx.save();
+        ctx.translate(bx, by); 
+        ctx.rotate(boss.masamuneAngle);
+        fr(-2,-115,3,119,C.lightest); fr(-3,-115,5,4,C.dark); 
+        ctx.restore();
+      } else {
         const idleAngle = -0.15 + Math.sin(t * 2.5) * 0.06;
         const swayX = Math.cos(t * 2) * 1.5;
-        
         ctx.save();
         ctx.translate(bx - 7 + swayX, by - 14); 
         ctx.rotate(idleAngle);
         fr(0,0,2,115,C.lightest); fr(-1,0,4,4,C.dark); fr(-1,0,1,115,C.dark); 
         ctx.restore();
       }
+      
       if (p2) { ctx.globalAlpha=0.15+0.1*Math.sin(t*4); fr(bx-20,by-30,40,60,C.darkest); ctx.globalAlpha=1; }
       if (boss.invincible && Math.floor(t*15)%2===0) { ctx.globalAlpha=0.5; fr(bx-12,by-30,24,60,C.lightest); ctx.globalAlpha=1; }
     }
@@ -557,7 +582,6 @@
 
       boss.state = pool[Math.floor(Math.random()*pool.length)];
       boss.stateTimer = 0; boss.actionTimer = (1.2 + Math.random()*0.8) / diffMults.spd;
-      if (boss.state==='masamune') boss.masamuneActive=true;
       if (boss.state==='supernova') { boss.novaActive=true; boss.novaTimer=0; }
       if (boss.state==='meteor') {
         for (let i=0;i<(boss.phase===2?5:3);i++) {
@@ -633,6 +657,12 @@
       boss.wingAngle = 0.3 + Math.sin(t*1.5)*0.15; boss.floatY = Math.sin(t*1.2)*4;
       if (boss.wingSpan < 1) boss.wingSpan = Math.min(1, boss.wingSpan+dt*0.8);
       
+      // Update Hero Damage Effect Timer
+      if (hero.slashFx && hero.slashFx.active) {
+        hero.slashFx.timer -= dt;
+        if (hero.slashFx.timer <= 0) hero.slashFx.active = false;
+      }
+      
       if (!hero.dead) {
         const spd = hero.speed * (hero.limitBreak ? 1.5 : 1);
         if (keys.left  && hero.x > 12)   hero.x -= spd*dt;
@@ -705,13 +735,23 @@
         }
 
         if (boss.state==='slash') {
-          if (boss.stateTimer < 0.4) { boss.x += (boss.slashX-boss.x)*5*dt; } 
+          boss.masamuneActive = true;
+          if (boss.stateTimer < 0.4) { 
+             boss.x += (boss.slashX - boss.x) * 5 * dt; 
+             boss.masamuneAngle = -0.5; // Wind up 
+          } 
           else {
-            fr(boss.slashX-4, boss.y, 8, H-boss.y-18, C.darkest);
-            ctx.globalAlpha=0.4;
-            fr(boss.slashX-8,boss.y,16,H-boss.y-18,C.dark); ctx.globalAlpha=1;
-            if (!hero.invincible && Math.abs(hero.x-boss.slashX)<12) { heroTakeDamage(boss.phase===2?14:9); }
-            if (boss.stateTimer>0.8) { boss.state='idle'; boss.actionTimer=0.8; boss.masamuneActive=false; }
+             // Sweep sword arc rapidly
+             boss.masamuneAngle = -0.5 + ((boss.stateTimer - 0.4) / 0.4) * Math.PI;
+             
+             ctx.save();
+             ctx.globalAlpha = Math.max(0, 1 - (boss.stateTimer - 0.4)/0.4);
+             fr(boss.slashX - 6, boss.y + 20, 12, H, C.darkest);
+             fr(boss.slashX - 2, boss.y + 20, 4, H, C.lightest);
+             ctx.restore();
+             
+             if (!hero.invincible && Math.abs(hero.x - boss.slashX) < 16) { heroTakeDamage(boss.phase === 2 ? 14 : 9); }
+             if (boss.stateTimer > 0.8) { boss.state = 'idle'; boss.actionTimer = 0.8; boss.masamuneActive = false; }
           }
         }
         if (boss.state==='beam') {
@@ -725,10 +765,8 @@
           }
         }
         if (boss.state==='masamune') {
+          boss.masamuneActive = true;
           boss.masamuneAngle += dt*(boss.phase===2?6:4);
-          ctx.save();
-          ctx.translate(boss.x, boss.y); ctx.rotate(boss.masamuneAngle);
-          fr(-2,-115,3,119,C.lightest); fr(-3,-115,5,4,C.dark); ctx.restore();
           
           const mTip = { x: boss.x+Math.sin(boss.masamuneAngle)*115, y: boss.y-Math.cos(boss.masamuneAngle)*115 };
           const mMid = { x: boss.x+Math.sin(boss.masamuneAngle)*57, y: boss.y-Math.cos(boss.masamuneAngle)*57 };
@@ -766,11 +804,16 @@
         // NEW ATTACKS
         if (boss.state==='octaslash') {
             boss.masamuneActive = true;
+            boss.masamuneAngle = boss.stateTimer * 20; // Whirl the sword wildly
+            
             if (boss.stateTimer > boss.octaCount * 0.25 && boss.octaCount < 8) {
                 boss.slashX = hero.x + (Math.random()-0.5)*40;
                 boss.x = boss.slashX;
                 boss.y = hero.y - 20 - Math.random()*20; 
-                if (!hero.invincible && Math.abs(hero.x - boss.x) < 25) heroTakeDamage(boss.phase===2?15:10);
+                
+                if (!hero.invincible && Math.abs(hero.x - boss.x) < 30 && Math.abs(hero.y - boss.y) < 30) {
+                    heroTakeDamage(boss.phase===2?15:10);
+                }
                 spawnParticles(boss.x, boss.y, 5, C.light, 80, 0.2);
                 boss.octaCount++;
                 playSfx(400, 'square', 0.05);
@@ -811,6 +854,7 @@
       if (hero.invincible || hero.dead) return;
       dmg = Math.floor(dmg * diffMults.dmg);
       hero.hp = Math.max(0, hero.hp - dmg); hero.invincible=true; hero.invTimer=0.6;
+      hero.slashFx = { active: true, timer: 0.25 }; // Trigger the visual player hit effect
       spawnParticles(hero.x,hero.y,6,C.darkest,60,0.4); flash(C.dark,0.1); hero.limitGauge=Math.min(100,hero.limitGauge+10);
       playSfx(150, 'sawtooth', 0.2, 0.15);
     }
