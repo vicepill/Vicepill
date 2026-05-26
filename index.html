@@ -41,7 +41,10 @@
   }
 
   @keyframes flicker {
-    0%,100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.4; } 94% { opacity: 1; } 97% { opacity: 1; } 98% { opacity: 0.2; } 99% { opacity: 1; }
+    0%,100% { opacity: 1; } 92% { opacity: 1; } 
+    93% { opacity: 0.4; } 94% { opacity: 1; } 
+    97% { opacity: 1; } 98% { opacity: 0.2; } 
+    99% { opacity: 1; }
   }
   @keyframes cursor-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
   #btn-label { animation: flicker 4s infinite; }
@@ -81,12 +84,15 @@
 
   :root {
     --gb-lightest: #9bbc0f; --gb-light: #8bac0f; --gb-dark: #306230; --gb-darkest: #0f380f;
-    --btn-ab: #c44040; --btn-ab-sh: #8a1c1c; --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a; 
+    --btn-ab: #c44040; --btn-ab-sh: #8a1c1c;
+    --body-color: #b0a090; --body-dark: #8a7a6a; --body-shadow: #6a5a4a; 
   }
 
   #game-container {
-    display: none; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 40;
-    justify-content: center; align-items: center; background: #0a0a14; font-family: 'Press Start 2P', monospace;
+    display: none; width: 100%; height: 100%;
+    position: absolute; inset: 0; z-index: 40;
+    justify-content: center; align-items: center; background: #0a0a14;
+    font-family: 'Press Start 2P', monospace;
   }
   #game-container::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0a0a14 60%); z-index:-1; }
   #game-container::after { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:9999; }
@@ -103,7 +109,10 @@
   }
   .phone-notch .camera { width:10px; height:10px; background:#1a1a2e; border-radius:50%; border:2px solid #333; }
   .phone-notch .speaker { width:40px; height:5px; background:#111; border-radius:3px; border:1px solid #333; }
-  .phone-screen { flex:1; width:100%; display:flex; flex-direction:column; align-items:center; padding: 8px 12px 8px; overflow: hidden; }
+  .phone-screen {
+    flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
+    padding: 8px 12px 8px; overflow: hidden;
+  }
 
   .console-device {
     width: 300px; background: linear-gradient(170deg, var(--body-color) 0%, #9a8a78 50%, var(--body-dark) 100%);
@@ -329,6 +338,7 @@
     let diffMults = { hp: 1, dmg: 1, spd: 1 };
     let BOSS_MAXHP = 350;
     let BOSS_MAXHP2 = 500;
+
     function updateVignette(t) {
       let opacity;
       if (t <= SLOW_END) {
@@ -349,10 +359,10 @@
       scroller.scrollTop = maxScroll;
       audioMagitek.addEventListener("timeupdate", () => {
         if (!audioMagitek.duration) return;
-        const t = audioMagitek.currentTime;
-        const progress = t / audioMagitek.duration;
+        const time = audioMagitek.currentTime;
+        const progress = time / audioMagitek.duration;
         scroller.scrollTop = maxScroll * (1 - progress);
-        updateVignette(t);
+        updateVignette(time);
       });
     };
 
@@ -453,6 +463,7 @@
       attacking: false, attackTimer:0, attackCooldown:0, invincible: false, invTimer:0,
       slashTrail: [], limitBreak: false, limitGauge:0, dead: false,
     };
+
     function drawHero() {
       const { x, y, invincible, attacking } = hero;
       if (invincible && Math.floor(t*20)%2===0) return;
@@ -493,6 +504,7 @@
       wingSpan: 0, wingAngle: 0, beamX: 0, beamActive: false, meteorList: [], flareList: [], masamuneAngle: 0, masamuneActive: false,
       slashX: W/2, slashDir: 1, invincible: false, phase2Transition: false, novaTimer: 0, novaActive: false, floatY: 0, octaCount: 0
     };
+
     function drawBoss() {
       const bx = boss.x, by = boss.y + boss.floatY;
       const p2 = boss.phase === 2;
@@ -520,12 +532,17 @@
       fr(bx-8,by-10,5,5,hairCol); fr(bx+3,by-10,5,5,hairCol);
       fr(bx-4,by-22,8,8,C.lightest); fr(bx-5,by-25,10,5,hairCol); fr(bx-3,by-27,6,4,hairCol);
       fr(bx-3,by-19,2,2,C.dark); fr(bx+1,by-19,2,2,C.dark); fr(bx-1,by-15,2,1,C.light);
+      
+      // Animated Idle Sword
       if (!boss.masamuneActive) {
+        const idleAngle = -0.15 + Math.sin(t * 2.5) * 0.06;
+        const swayX = Math.cos(t * 2) * 1.5;
+        
         ctx.save();
-        ctx.translate(bx-7, by-14);
-        const sway = Math.sin(t * 2.5) * 0.08;
-        ctx.rotate(-0.15 + sway);
-        fr(0,0,2,115,C.lightest); fr(-1,0,4,4,C.dark); fr(-1,0,1,115,C.dark); ctx.restore();
+        ctx.translate(bx - 7 + swayX, by - 14); 
+        ctx.rotate(idleAngle);
+        fr(0,0,2,115,C.lightest); fr(-1,0,4,4,C.dark); fr(-1,0,1,115,C.dark); 
+        ctx.restore();
       }
       if (p2) { ctx.globalAlpha=0.15+0.1*Math.sin(t*4); fr(bx-20,by-30,40,60,C.darkest); ctx.globalAlpha=1; }
       if (boss.invincible && Math.floor(t*15)%2===0) { ctx.globalAlpha=0.5; fr(bx-12,by-30,24,60,C.lightest); ctx.globalAlpha=1; }
@@ -533,7 +550,7 @@
 
     function bossChooseAttack() {
       const pool = boss.phase===1 ?
-      ['slash','slash','beam','masamune','meteor'] : ['slash','beam','masamune','meteor','meteor','supernova'];
+        ['slash','slash','beam','masamune','meteor'] : ['slash','beam','masamune','meteor','meteor','supernova'];
       
       if (diffLevel >= 2) { pool.push('octaslash'); if(boss.phase===2) pool.push('octaslash'); }
       if (diffLevel >= 3) { pool.push('shadowflare'); if(boss.phase===2) pool.push('shadowflare', 'shadowflare'); }
@@ -615,6 +632,7 @@
       frameN++;
       boss.wingAngle = 0.3 + Math.sin(t*1.5)*0.15; boss.floatY = Math.sin(t*1.2)*4;
       if (boss.wingSpan < 1) boss.wingSpan = Math.min(1, boss.wingSpan+dt*0.8);
+      
       if (!hero.dead) {
         const spd = hero.speed * (hero.limitBreak ? 1.5 : 1);
         if (keys.left  && hero.x > 12)   hero.x -= spd*dt;
@@ -622,8 +640,7 @@
       }
       if (hero.attackCooldown > 0) hero.attackCooldown -= dt;
       if (hero.invincible) { hero.invTimer -= dt; if(hero.invTimer<=0) hero.invincible=false; }
-      if (boss.invincible) { boss.invTimer -= dt;
-      if(boss.invTimer<=0) boss.invincible=false; }
+      if (boss.invincible) { boss.invTimer -= dt; if(boss.invTimer<=0) boss.invincible=false; }
 
       if (hero.attacking) {
         hero.attackTimer -= dt;
@@ -662,6 +679,7 @@
         }
       }
       if (hero.mp < hero.maxMp) hero.mp = Math.min(hero.maxMp, hero.mp+dt*3);
+
       if (boss.hp <= 0 && boss.phase===1) {
         boss.phase=2; boss.hp=BOSS_MAXHP2; boss.maxHp=BOSS_MAXHP2; boss.invincible=true; boss.invTimer=2.5; boss.state='idle';
         boss.actionTimer=2.5;
@@ -679,15 +697,15 @@
         boss.actionTimer -= dt;
         boss.stateTimer += dt;
         
-        if (boss.state==='idle') {
-            boss.x += (W/2 - boss.x) * 4 * dt;
-            boss.y += (65 - boss.y) * 4 * dt;
-            if (boss.actionTimer<=0) bossChooseAttack();
+        // Smooth return to default position if idle
+        if (boss.state === 'idle') {
+            boss.x += (W/2 - boss.x) * dt * 4;
+            boss.y += (65 - boss.y) * dt * 4;
+            if (boss.actionTimer <= 0) bossChooseAttack();
         }
 
         if (boss.state==='slash') {
-          if (boss.stateTimer < 0.4) { boss.x += (boss.slashX-boss.x)*5*dt;
-          } 
+          if (boss.stateTimer < 0.4) { boss.x += (boss.slashX-boss.x)*5*dt; } 
           else {
             fr(boss.slashX-4, boss.y, 8, H-boss.y-18, C.darkest);
             ctx.globalAlpha=0.4;
@@ -777,11 +795,11 @@
       }
       
       if (hero.hp<=0&&!hero.dead) { hero.dead=true;
-      spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); setTimeout(()=>{ STATE='gameover'; },1500); }
+        spawnParticles(hero.x,hero.y,15,C.dark,80,1.0); setTimeout(()=>{ STATE='gameover'; },1500); }
 
       drawBackground(); drawBoss(); drawHero(); updateParticles(dt); drawHUD(); drawBottomBar();
       if (flashTimer>0) { flashTimer-=dt;
-      ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
+        ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
       if (STATE==='phase2') {
         fr(0,0,W,H,C.darkest);
         ctx.globalAlpha=0.8; const blink = Math.floor(t*4)%2===0;
@@ -820,7 +838,8 @@
     function updateDifficulty(dt) {
         diffT += dt;
         t += dt; clr(C.darkest);
-        for (let i=0;i<40;i++) { const sx=(i*67+13+Math.floor(diffT*8))%W; const sy=(i*43+7)%H; const blink=Math.sin(diffT*2+i)>0.3; fr(sx,sy,blink?2:1,1,i%4===0?C.lightest:C.dark); }
+        for (let i=0;i<40;i++) { const sx=(i*67+13+Math.floor(diffT*8))%W; const sy=(i*43+7)%H; const blink=Math.sin(diffT*2+i)>0.3; fr(sx,sy,blink?2:1,1,i%4===0?C.lightest:C.dark);
+        }
         fr(0,30,W,140,C.darkest); fr(2,32,W-4,136,C.dark);
         txtC('SELECT DIFFICULTY', 50, 6, C.lightest);
         if (jp.up) { diffSelection = (diffSelection - 1 + 4) % 4; playSfx(600, 'square', 0.05); }
