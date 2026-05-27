@@ -588,34 +588,39 @@ function setSFStatus(ok, msg){
   else   el.style.textShadow = '0 0 6px #ff4444';
 }
 
+function spawnWorkerFromBlob(blob){
+  const url = URL.createObjectURL(blob);
+  sfWorker = new Worker(url);
+  sfWorker.onmessage = e => {
+    const line = e.data;
+    if(line === 'uciok'){ sfWorker.postMessage('isready'); }
+    if(line === 'readyok'){ sfReady = true; setSFStatus(true, 'OK'); }
+    if(typeof line === 'string' && line.startsWith('bestmove') && sfCallback){
+      const parts = line.split(' ');
+      const uci = parts[1];
+      const cb = sfCallback; sfCallback = null;
+      cb(uci);
+    }
+  };
+  sfWorker.onerror = err => {
+    console.warn('Stockfish worker error:', err);
+    setSFStatus(false, 'NOT OK');
+    sfWorker = null; sfReady = false;
+  };
+  sfWorker.postMessage('uci');
+}
+
 function initStockfish(){
   if(sfWorker) return;
   setSFStatus(false, '...');
-  try {
-    // Use the single-file stockfish.js from cdnjs (works without SharedArrayBuffer)
-    sfWorker = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
-    sfWorker.onmessage = e => {
-      const line = e.data;
-      if(line === 'uciok'){ sfWorker.postMessage('isready'); }
-      if(line === 'readyok'){ sfReady = true; setSFStatus(true, 'OK'); }
-      if(typeof line === 'string' && line.startsWith('bestmove') && sfCallback){
-        const parts = line.split(' ');
-        const uci = parts[1]; // e.g. "e2e4" or "e7e8q"
-        const cb = sfCallback; sfCallback = null;
-        cb(uci);
-      }
-    };
-    sfWorker.onerror = err => {
-      console.warn('Stockfish worker error, falling back to minimax:', err);
+  const SF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+  fetch(SF_URL)
+    .then(r => { if(!r.ok) throw new Error('fetch ' + r.status); return r.blob(); })
+    .then(blob => spawnWorkerFromBlob(blob))
+    .catch(err => {
+      console.warn('Stockfish fetch failed, falling back to minimax:', err);
       setSFStatus(false, 'NOT OK');
-      sfWorker = null; sfReady = false;
-    };
-    sfWorker.postMessage('uci');
-  } catch(e) {
-    console.warn('Stockfish unavailable, falling back to minimax:', e);
-    setSFStatus(false, 'NOT OK');
-    sfWorker = null;
-  }
+    });
 }
 
 // --- FEN conversion ---
