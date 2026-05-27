@@ -274,6 +274,7 @@
 <div id="console">
   <div class="console-top">
     <div class="console-brand">♟ PocketChess</div>
+    <div id="sfStatus" style="font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;color:#5a5650;">SF: <span id="sfStatusText" style="color:#5a5650;">...</span></div>
     <div class="led"></div>
   </div>
 
@@ -578,15 +579,25 @@ let sfWorker = null;
 let sfReady  = false;
 let sfCallback = null;
 
+function setSFStatus(ok, msg){
+  const el = document.getElementById('sfStatusText');
+  if(!el) return;
+  el.textContent = msg || (ok ? 'OK' : 'NOT OK');
+  el.style.color  = ok ? '#44ff88' : '#ff4444';
+  if(ok) el.style.textShadow = '0 0 6px #44ff88';
+  else   el.style.textShadow = '0 0 6px #ff4444';
+}
+
 function initStockfish(){
   if(sfWorker) return;
+  setSFStatus(false, '...');
   try {
     // Use the single-file stockfish.js from cdnjs (works without SharedArrayBuffer)
     sfWorker = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
     sfWorker.onmessage = e => {
       const line = e.data;
       if(line === 'uciok'){ sfWorker.postMessage('isready'); }
-      if(line === 'readyok'){ sfReady = true; }
+      if(line === 'readyok'){ sfReady = true; setSFStatus(true, 'OK'); }
       if(typeof line === 'string' && line.startsWith('bestmove') && sfCallback){
         const parts = line.split(' ');
         const uci = parts[1]; // e.g. "e2e4" or "e7e8q"
@@ -596,11 +607,13 @@ function initStockfish(){
     };
     sfWorker.onerror = err => {
       console.warn('Stockfish worker error, falling back to minimax:', err);
+      setSFStatus(false, 'NOT OK');
       sfWorker = null; sfReady = false;
     };
     sfWorker.postMessage('uci');
   } catch(e) {
     console.warn('Stockfish unavailable, falling back to minimax:', e);
+    setSFStatus(false, 'NOT OK');
     sfWorker = null;
   }
 }
