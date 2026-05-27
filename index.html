@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAGITEK — Secret Boss</title>
+<title>Magitek</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
   
@@ -97,28 +97,12 @@
   #game-container::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0a0a14 60%); z-index:-1; }
   #game-container::after { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:9999; }
 
-  .phone-shell {
-    width: 360px; height: 740px; background: linear-gradient(160deg, #2a2a3e 0%, #1a1a2a 100%);
-    border-radius: 44px; border: 2px solid #3a3a5e;
-    box-shadow: 0 0 0 1px #0a0a1a, 0 30px 80px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
-    display: flex; flex-direction: column; align-items: center; overflow: hidden; position: relative;
-  }
-  .phone-notch {
-    width: 120px; height: 28px; background: #111; border-radius: 0 0 20px 20px;
-    display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0;
-  }
-  .phone-notch .camera { width:10px; height:10px; background:#1a1a2e; border-radius:50%; border:2px solid #333; }
-  .phone-notch .speaker { width:40px; height:5px; background:#111; border-radius:3px; border:1px solid #333; }
-  .phone-screen {
-    flex:1; width:100%; display:flex; flex-direction:column; align-items:center;
-    padding: 8px 12px 8px; overflow: hidden;
-  }
-
   .console-device {
     width: 300px; background: linear-gradient(170deg, var(--body-color) 0%, #9a8a78 50%, var(--body-dark) 100%);
     border-radius: 18px 18px 60px 60px;
-    box-shadow: 0 4px 0 var(--body-shadow), 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
-    display:flex; flex-direction:column; align-items:center; padding: 12px 16px 20px; position:relative; flex-shrink:0;
+    box-shadow: 0 4px 0 var(--body-shadow), 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 2px #3a3a5e;
+    display:flex;
+    flex-direction:column; align-items:center; padding: 12px 16px 20px; position:relative; flex-shrink:0;
   }
   .console-label { font-size: 5px; color: var(--body-shadow); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
   .power-led {
@@ -265,51 +249,43 @@
   </div>
 
   <div id="game-container">
-    <div class="phone-shell">
-      <div class="phone-notch">
-        <div class="camera"></div>
-        <div class="speaker"></div>
+    <div class="console-device">
+      <div class="console-label">RetroPocket — One Winged Angel</div>
+      <div class="power-led"></div>
+      <div class="screen-bezel">
+        <div class="screen-inner">
+          <canvas id="gameCanvas" width="202" height="202"></canvas>
+        </div>
       </div>
-      <div class="phone-screen">
-        <div class="console-device">
-          <div class="console-label">RetroPocket — One Winged Angel</div>
-          <div class="power-led"></div>
-          <div class="screen-bezel">
-            <div class="screen-inner">
-              <canvas id="gameCanvas" width="202" height="202"></canvas>
-            </div>
+      <div class="console-side-deco">
+        <span class="vol-label">◁ VOL ▷</span>
+        <span class="vol-label">CONTRAST</span>
+      </div>
+      <div class="controls-row">
+        <div class="dpad">
+          <div class="dpad-arm dpad-up" id="btn-up"></div>
+          <div class="dpad-arm dpad-down" id="btn-down"></div>
+          <div class="dpad-arm dpad-left" id="btn-left"></div>
+          <div class="dpad-arm dpad-right" id="btn-right"></div>
+          <div class="dpad-center"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="select-start-row">
+            <div class="btn-pill" id="btn-select">SELECT</div>
+            <div class="btn-pill" id="btn-start">START</div>
           </div>
-          <div class="console-side-deco">
-            <span class="vol-label">◁ VOL ▷</span>
-            <span class="vol-label">CONTRAST</span>
+          <div class="speaker-grille">
+            <div class="speaker-dot"></div><div class="speaker-dot"></div>
+            <div class="speaker-dot"></div><div class="speaker-dot"></div>
+            <div class="speaker-dot"></div><div class="speaker-dot"></div>
+            <div class="speaker-dot"></div><div class="speaker-dot"></div>
           </div>
-          <div class="controls-row">
-            <div class="dpad">
-              <div class="dpad-arm dpad-up" id="btn-up"></div>
-              <div class="dpad-arm dpad-down" id="btn-down"></div>
-              <div class="dpad-arm dpad-left" id="btn-left"></div>
-              <div class="dpad-arm dpad-right" id="btn-right"></div>
-              <div class="dpad-center"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-              <div class="select-start-row">
-                <div class="btn-pill" id="btn-select">SELECT</div>
-                <div class="btn-pill" id="btn-start">START</div>
-              </div>
-              <div class="speaker-grille">
-                <div class="speaker-dot"></div><div class="speaker-dot"></div>
-                <div class="speaker-dot"></div><div class="speaker-dot"></div>
-                <div class="speaker-dot"></div><div class="speaker-dot"></div>
-                <div class="speaker-dot"></div><div class="speaker-dot"></div>
-              </div>
-            </div>
-            <div class="btn-cluster">
-              <div class="btn-action btn-y" id="btn-y">Y</div>
-              <div class="btn-action btn-x" id="btn-x">X</div>
-              <div class="btn-action btn-a" id="btn-a">A</div>
-              <div class="btn-action btn-b" id="btn-b">B</div>
-            </div>
-          </div>
+        </div>
+        <div class="btn-cluster">
+          <div class="btn-action btn-y" id="btn-y">Y</div>
+          <div class="btn-action btn-x" id="btn-x">X</div>
+          <div class="btn-action btn-a" id="btn-a">A</div>
+          <div class="btn-action btn-b" id="btn-b">B</div>
         </div>
       </div>
     </div>
@@ -338,10 +314,9 @@
     let diffMults = { hp: 1, dmg: 1, spd: 1 };
     let BOSS_MAXHP = 350;
     let BOSS_MAXHP2 = 500;
-
     // Global Screen Shake
     let screenShake = 0;
-
+    
     function updateVignette(t) {
       let opacity;
       if (t <= SLOW_END) {
@@ -409,6 +384,22 @@
       osc.start();
       osc.stop(audioCtx.currentTime + dur);
     }
+    
+    function playHealSfx() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.4); // Pitch sweeps up
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.4);
+    }
 
     const keys = {};
     const jp = {};
@@ -425,12 +416,12 @@
         el.addEventListener('pointerleave',e => { keys[k]=false; el.classList.remove('pressed'); });
       });
       document.addEventListener('keydown', e => {
-        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a', x:'b', c:'y', y:'y', ' ':'a', Enter:'start', Shift:'select'};
+        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a', x:'b', c:'y', y:'y', v:'x', ' ':'a', Enter:'start', Shift:'select'};
         const k = m[e.key]||m[e.key?.toLowerCase()];
         if(k){keys[k]=true;jp[k]=true;}
       });
       document.addEventListener('keyup', e => {
-        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a', x:'b', c:'y', y:'y', ' ':'a', Enter:'start', Shift:'select'};
+        const m = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', z:'a', x:'b', c:'y', y:'y', v:'x', ' ':'a', Enter:'start', Shift:'select'};
         const k = m[e.key]||m[e.key?.toLowerCase()];
         if(k) keys[k]=false;
       });
@@ -467,9 +458,9 @@
       x: W/2, y: H-28, w:10, h:16, hp: 150, maxHp:150, mp: 100, maxMp:100, speed: 110,
       attacking: false, attackTimer:0, attackCooldown:0, invincible: false, invTimer:0,
       slashTrail: [], limitBreak: false, limitGauge:0, dead: false,
-      slashFx: { active: false, timer: 0 }
+      slashFx: { active: false, timer: 0 }, healsLeft: 2
     };
-
+    
     function drawHero() {
       const { x, y, invincible, attacking } = hero;
       if (invincible && Math.floor(t*20)%2===0) return;
@@ -506,7 +497,7 @@
 
       // Vicious Multi-Slash Damage Effect over Hero
       if (hero.slashFx && hero.slashFx.active) {
-        const prog = hero.slashFx.timer / 0.3; 
+        const prog = hero.slashFx.timer / 0.3;
         ctx.save();
         ctx.translate(x, hy - 10);
         
@@ -518,7 +509,7 @@
         // Slash 3
         ctx.moveTo(-30, 0); ctx.lineTo(30, 0);
         
-        ctx.strokeStyle = C.lightest; 
+        ctx.strokeStyle = C.lightest;
         ctx.lineWidth = 4 * prog;
         ctx.stroke();
         
@@ -534,9 +525,9 @@
       x: W/2, y: 65, hp: BOSS_MAXHP, maxHp: BOSS_MAXHP, phase: 1, state: 'idle', stateTimer: 0, actionTimer: 1.5, dead: false,
       wingSpan: 0, wingAngle: 0, beamX: 0, beamActive: false, meteorList: [], flareList: [], masamuneAngle: 0, masamuneActive: false,
       slashX: W/2, slashDir: 1, invincible: false, phase2Transition: false, novaTimer: 0, novaActive: false, floatY: 0, octaCount: 0,
-      octaLines: []
+      octaLines: [], speechText: '', speechTimer: 0
     };
-
+    
     function drawBoss() {
       const bx = boss.x, by = boss.y + boss.floatY;
       const p2 = boss.phase === 2;
@@ -556,6 +547,7 @@
         }
         ctx.restore();
       }
+      
       const hairCol = p2 ? C.light : C.lightest;
       fr(bx-2,by+5,4,28,hairCol); fr(bx-3,by+10,2,20,hairCol); fr(bx+1,by+12,3,18,hairCol); fr(bx-1,by+32,2,10,hairCol);
       fr(bx-6,by-8,12,24,C.darkest);
@@ -578,12 +570,27 @@
         ctx.save();
         ctx.translate(bx - 7 + swayX, by - 14); 
         ctx.rotate(idleAngle);
-        fr(0,0,2,115,C.lightest); fr(-1,0,4,4,C.dark); fr(-1,0,1,115,C.dark); 
+        fr(0,0,2,115,C.lightest); fr(-1,0,4,4,C.dark);
+        fr(-1,0,1,115,C.dark); 
         ctx.restore();
       }
       
       if (p2) { ctx.globalAlpha=0.15+0.1*Math.sin(t*4); fr(bx-20,by-30,40,60,C.darkest); ctx.globalAlpha=1; }
       if (boss.invincible && Math.floor(t*15)%2===0) { ctx.globalAlpha=0.5; fr(bx-12,by-30,24,60,C.lightest); ctx.globalAlpha=1; }
+      
+      // Draw Boss Speech Bubble in Extreme Mode
+      if (boss.speechTimer > 0) {
+        ctx.font = '4px "Press Start 2P"';
+        let sw = ctx.measureText(boss.speechText).width;
+        // Draw tail
+        fr(bx - 2, by - 32, 4, 4, C.lightest);
+        fr(bx - 1, by - 32, 2, 3, C.darkest);
+        // Draw bubble box
+        fr(bx - sw/2 - 4, by - 44, sw + 8, 12, C.lightest);
+        fr(bx - sw/2 - 3, by - 43, sw + 6, 10, C.darkest);
+        ctx.fillStyle = C.lightest;
+        ctx.fillText(boss.speechText, bx - sw/2, by - 35);
+      }
     }
 
     function bossChooseAttack() {
@@ -595,15 +602,14 @@
 
       boss.state = pool[Math.floor(Math.random()*pool.length)];
       boss.stateTimer = 0; boss.actionTimer = (1.2 + Math.random()*0.8) / diffMults.spd;
+      
       if (boss.state==='supernova') { boss.novaActive=true; boss.novaTimer=0; }
       if (boss.state==='meteor') {
         for (let i=0;i<(boss.phase===2?5:3);i++) {
           boss.meteorList.push({ x: 20+Math.random()*(W-40), y:-20-Math.random()*30, tx: hero.x-10+Math.random()*20, speed: 60+Math.random()*40, size: 5+Math.floor(Math.random()*4), delay: i*0.2 });
         }
       }
-      if (boss.state==='slash') { 
-          boss.slashDir = hero.x < W/2 ? -1 : 1; 
-      }
+      if (boss.state==='slash') { boss.slashDir = hero.x < W/2 ? -1 : 1; }
       if (boss.state==='beam') { boss.beamX = hero.x; boss.beamActive = true; }
       if (boss.state==='octaslash') { boss.octaCount = 0; }
       if (boss.state==='shadowflare') {
@@ -611,6 +617,23 @@
               {x: 10, y: 30, life: 4}, {x: W-10, y: 30, life: 4},
               {x: 10, y: H-30, life: 4}, {x: W-10, y: H-30, life: 4}
           ];
+      }
+      
+      // Extreme Mode Speech Lines
+      if (diffLevel === 3 && Math.random() < 0.6) {
+          const quotes = {
+              'slash': ['TOO SLOW!', 'PERISH.'],
+              'beam': ['BURN.', 'ASHES!'],
+              'masamune': ['DESPAIR.', 'END IT.'],
+              'meteor': ['FALL.', 'DIVINITY.'],
+              'supernova': ['OBLIVION.', 'KNEEL.'],
+              'octaslash': ['Shall I carve pain into your body?.', 'USELESS.'],
+              'shadowflare': ['DARKNESS.', 'SHADOWS.']
+          };
+          if (quotes[boss.state]) {
+              boss.speechText = quotes[boss.state][Math.floor(Math.random()*quotes[boss.state].length)];
+              boss.speechTimer = 1.8;
+          }
       }
     }
 
@@ -624,8 +647,25 @@
       const bHpCol = boss.phase===2 ? C.dark : C.light;
       fr(W-bHpW-2,2,bHpFill,8,bHpCol); fr(W-bHpW-2,2,bHpFill,2,'rgba(255,255,255,0.15)');
       const lg = Math.floor(50*(hero.limitGauge/100)); fr(0,195,50,7,C.dark); fr(0,195,lg,7,C.lightest); txt('LIMIT',2,202,4,C.light);
+      
+      // Draw Healing Spells on Hard/Extreme modes
+      if (diffLevel >= 2) {
+          for (let i = 0; i < hero.healsLeft; i++) {
+              const hx = 2 + i * 10;
+              fr(hx + 2, 24, 2, 6, C.lightest); // Vertical bar of plus
+              fr(hx, 26, 6, 2, C.lightest);     // Horizontal bar of plus
+          }
+      }
     }
-    function drawBottomBar() { fr(0,186,W,16,C.darkest); txt('A=ATK  B=MAGIC  Y=LIMIT',2,196,4,C.light); }
+    
+    function drawBottomBar() { 
+        fr(0,186,W,16,C.darkest);
+        if (diffLevel >= 2) {
+            txt('A=ATK B=MAG X=HEAL Y=LIM',2,196,4,C.light); 
+        } else {
+            txt('A=ATK  B=MAGIC  Y=LIMIT',2,196,4,C.light); 
+        }
+    }
 
     function drawBackground() {
       clr(C.darkest);
@@ -679,6 +719,8 @@
       boss.wingAngle = 0.3 + Math.sin(t*1.5)*0.15; boss.floatY = Math.sin(t*1.2)*4;
       if (boss.wingSpan < 1) boss.wingSpan = Math.min(1, boss.wingSpan+dt*0.8);
       
+      if (boss.speechTimer > 0) boss.speechTimer -= dt;
+      
       // Update Hero Damage Effect Timer
       if (hero.slashFx && hero.slashFx.active) {
         hero.slashFx.timer -= dt;
@@ -692,7 +734,8 @@
       }
       if (hero.attackCooldown > 0) hero.attackCooldown -= dt;
       if (hero.invincible) { hero.invTimer -= dt; if(hero.invTimer<=0) hero.invincible=false; }
-      if (boss.invincible) { boss.invTimer -= dt; if(boss.invTimer<=0) boss.invincible=false; }
+      if (boss.invincible) { boss.invTimer -= dt;
+      if(boss.invTimer<=0) boss.invincible=false; }
 
       if (hero.attacking) {
         hero.attackTimer -= dt;
@@ -707,7 +750,8 @@
           for (let i=0;i<5;i++) hero.slashTrail.push({x:boss.x-15+i*6,y:boss.y-10+i*3,w:12,h:3,a:0.8-i*0.12});
           
           if (!boss.invincible && Math.abs(hero.x-boss.x)<40 && hero.y-boss.y<120) {
-            const dmg = hero.limitBreak ? 40 : 15 + Math.floor(Math.random()*10);
+            const dmg = hero.limitBreak ?
+            40 : 15 + Math.floor(Math.random()*10);
             boss.hp = Math.max(0, boss.hp-dmg); spawnParticles(boss.x,boss.y,dmg>15?8:4,C.lightest,80,0.4); flash(C.lightest,0.08); hero.limitGauge=Math.min(100,hero.limitGauge+5);
             playSfx(400, 'square', 0.1);
           } else {
@@ -730,9 +774,19 @@
             screenShake = 6;
           }
         }
+        
+        // Healing Spell Triggered by X button on Hard/Extreme Difficulty
+        if (jp.x && diffLevel >= 2 && hero.healsLeft > 0) {
+          hero.healsLeft--;
+          hero.hp = Math.min(hero.maxHp, hero.hp + Math.floor(hero.maxHp * 0.50)); // 50% HP Heal
+          playHealSfx();
+          spawnParticles(hero.x, hero.y, 20, C.lightest, 80, 0.8);
+          flash(C.lightest, 0.1);
+        }
       }
+      
       if (hero.mp < hero.maxMp) hero.mp = Math.min(hero.maxMp, hero.mp+dt*3);
-
+      
       if (boss.hp <= 0 && boss.phase===1) {
         boss.phase=2; boss.hp=BOSS_MAXHP2; boss.maxHp=BOSS_MAXHP2; boss.invincible=true; boss.invTimer=2.5; boss.state='idle';
         boss.actionTimer=2.5;
@@ -741,6 +795,7 @@
         if(currentShake>0) ctx.restore();
         return;
       }
+      
       if (boss.hp <= 0 && boss.phase===2 && !boss.dead) {
         boss.dead=true;
         spawnParticles(boss.x,boss.y,40,C.lightest,160,2.0); flash(C.lightest,0.5); 
@@ -771,12 +826,13 @@
           } else {
              // Dash and swing
              if (boss.stateTimer >= 0.4 && boss.stateTimer - dt < 0.4) {
-                playSfx(900, 'sawtooth', 0.15, 0.2); // Heavy Swish
+                playSfx(900, 'sawtooth', 0.15, 0.2);
                 screenShake = 4;
                 boss.slashX = hero.x - 40 * boss.slashDir; // Dash destination
              }
-             boss.masamuneAngle = 1.5; // Swing forward
-             boss.x += (boss.slashX - boss.x) * 15 * dt; // Hyperspeed dash
+             boss.masamuneAngle = 1.5;
+             // Swing forward
+             boss.x += (boss.slashX - boss.x) * 15 * dt;
              
              // Draw visual slash arc trail
              ctx.globalAlpha = Math.max(0, 1 - (boss.stateTimer - 0.4)/0.3);
@@ -785,15 +841,17 @@
              ctx.globalAlpha = 1;
              
              if (!hero.invincible && Math.abs(hero.x - boss.x) < 25) { heroTakeDamage(boss.phase === 2 ? 14 : 9); }
-             if (boss.stateTimer > 0.8) { boss.state = 'idle'; boss.actionTimer = 0.8; boss.masamuneActive = false; }
+             if (boss.stateTimer > 0.8) { boss.state = 'idle';
+             boss.actionTimer = 0.8; boss.masamuneActive = false; }
           }
         }
         
         if (boss.state==='beam') {
           if (boss.stateTimer<0.5) { ctx.globalAlpha=boss.stateTimer/0.5*0.4;
-            fr(boss.beamX-10,boss.y,20,H,C.lightest); ctx.globalAlpha=1; } 
+          fr(boss.beamX-10,boss.y,20,H,C.lightest); ctx.globalAlpha=1; } 
           else {
-            if (boss.stateTimer >= 0.5 && boss.stateTimer - dt < 0.5) { playSfx(800, 'sawtooth', 0.3, 0.15); screenShake = 2; }
+            if (boss.stateTimer >= 0.5 && boss.stateTimer - dt < 0.5) { playSfx(800, 'sawtooth', 0.3, 0.15);
+            screenShake = 2; }
             fr(boss.beamX-5,0,10,H,C.darkest);
             fr(boss.beamX-2,0,4,H,C.lightest);
             if (!hero.invincible && Math.abs(hero.x-boss.beamX)<8) heroTakeDamage(boss.phase===2?18:12);
@@ -806,16 +864,15 @@
           boss.masamuneActive = true;
           if (boss.stateTimer < dt * 2) playSfx(700, 'sawtooth', 0.2, 0.1);
           boss.masamuneAngle += dt*(boss.phase===2?6:4);
-          
           const mTip = { x: boss.x+Math.sin(boss.masamuneAngle)*115, y: boss.y-Math.cos(boss.masamuneAngle)*115 };
           const mMid = { x: boss.x+Math.sin(boss.masamuneAngle)*57, y: boss.y-Math.cos(boss.masamuneAngle)*57 };
-          
           const hitTip = Math.abs(hero.x-mTip.x)<16 && Math.abs(hero.y-mTip.y)<16;
           const hitMid = Math.abs(hero.x-mMid.x)<16 && Math.abs(hero.y-mMid.y)<16;
           
           if (!hero.invincible && (hitTip || hitMid)) { heroTakeDamage(boss.phase===2?16:10); screenShake = 4; }
           
-          if (boss.stateTimer>2.0) { boss.state='idle'; boss.actionTimer=1.2; boss.masamuneActive=false; boss.masamuneAngle=0; }
+          if (boss.stateTimer>2.0) { boss.state='idle';
+          boss.actionTimer=1.2; boss.masamuneActive=false; boss.masamuneAngle=0; }
         }
         
         if (boss.state==='meteor') {
@@ -844,7 +901,8 @@
           for (let r=0;r<rings;r++) {
             const radius=(r+1)*18+boss.novaTimer*20;
             ctx.strokeStyle=r%2===0?C.darkest:C.dark; ctx.lineWidth=3+r;
-            ctx.globalAlpha=Math.max(0,1-boss.novaTimer/2); ctx.beginPath(); ctx.arc(boss.x,boss.y,radius,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
+            ctx.globalAlpha=Math.max(0,1-boss.novaTimer/2);
+            ctx.beginPath(); ctx.arc(boss.x,boss.y,radius,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
           }
           if (boss.novaTimer>0.8&&boss.novaTimer<1.6) {
               screenShake = 2;
@@ -861,10 +919,8 @@
                 const oldX = boss.x, oldY = boss.y;
                 boss.slashX = hero.x + (Math.random()-0.5)*60;
                 boss.x = boss.slashX;
-                boss.y = hero.y - 10 - Math.random()*30; 
-                
+                boss.y = hero.y - 10 - Math.random()*30;
                 boss.octaLines.push({x1: oldX, y1: oldY, x2: boss.x, y2: boss.y, life: 0.4});
-                
                 if (!hero.invincible && Math.abs(hero.x - boss.x) < 35 && Math.abs(hero.y - boss.y) < 35) {
                     heroTakeDamage(boss.phase===2?15:10);
                 }
@@ -926,7 +982,8 @@
           setTimeout(()=>{ STATE='gameover'; },1500); 
       }
 
-      drawBackground(); drawBoss(); drawHero(); updateParticles(dt); 
+      drawBackground(); drawBoss(); drawHero();
+      updateParticles(dt); 
       
       // Cleanup Screen Shake Translation before drawing UI
       if (currentShake > 0) {
@@ -938,10 +995,12 @@
       drawHUD(); drawBottomBar();
       
       if (flashTimer>0) { flashTimer-=dt;
-        ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol); ctx.globalAlpha=1; }
+        ctx.globalAlpha=Math.min(1,flashTimer/0.12)*0.6; fr(0,0,W,H,flashCol);
+        ctx.globalAlpha=1; }
       if (STATE==='phase2') {
         fr(0,0,W,H,C.darkest);
-        ctx.globalAlpha=0.8; const blink = Math.floor(t*4)%2===0;
+        ctx.globalAlpha=0.8;
+        const blink = Math.floor(t*4)%2===0;
         if (blink) { txtC('SEPHIROTH',70,8,C.lightest); txtC('ENRAGES!',90,7,C.light); txtC('ONE WINGED',115,6,C.dark); txtC('ANGEL',130,10,C.dark); } ctx.globalAlpha=1;
       }
     }
@@ -1012,9 +1071,11 @@
             hero.mp = 100; hero.attacking = false;
             hero.invincible=false; hero.dead=false;
             hero.limitGauge=0; hero.limitBreak=false;
+            hero.healsLeft = 2; // Initialize the 2 heals
             boss.hp=BOSS_MAXHP; boss.maxHp=BOSS_MAXHP; boss.phase=1; boss.state='idle'; boss.actionTimer=2.0; boss.dead=false; boss.wingSpan=0; boss.masamuneActive=false; boss.beamActive=false;
             boss.meteorList=[]; boss.flareList=[]; boss.novaActive=false; boss.invincible=false; boss.x=W/2; boss.y=65;
-            boss.floatY=0; particles=[]; flashTimer=0; screenShake=0;
+            boss.floatY=0; boss.speechText=''; boss.speechTimer=0; particles=[]; flashTimer=0;
+            screenShake=0;
             cutsceneT=0; boss.octaCount = 0; boss.octaLines = [];
         }
     }
