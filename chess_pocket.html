@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>♟ PocketChess</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --accent: #e8c96a;
+    --accent2: #6ab4e8;
+    --light-sq: #c8b882;
+    --dark-sq: #4a6741;
+    --sq-size: 22px;
+    --select: rgba(232,201,106,0.45);
+    --valid: rgba(106,180,232,0.35);
+    --last-move: rgba(106,232,130,0.22);
+    --check: rgba(232,80,80,0.5);
+    --text: #c8c2b0;
+    --dim: #5a5650;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh;
+    font-family:'Share Tech Mono',monospace;
+    overflow:hidden;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(106,180,232,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(232,201,106,0.06) 0%, transparent 60%);
+    pointer-events:none;
+  }
+  body::after {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);
+    pointer-events:none; z-index:9999;
+  }
+
+  #console {
+    width:360px;
+    background:linear-gradient(160deg,#1c1f26 0%,#141720 60%,#0f1014 100%);
+    border-radius:20px 20px 54px 54px;
+    border:2px solid #2a2d3a;
+    box-shadow:0 0 0 1px #3a3d4a,0 20px 60px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.06);
+    padding:14px 18px 24px;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    position:relative;
+  }
+  .console-top { display:flex; align-items:center; justify-content:space-between; width:100%; }
+  .console-brand { font-family:'Pixelify Sans',monospace; font-size:10px; color:var(--accent); letter-spacing:3px; text-transform:uppercase; }
+  .led {
+    width:6px; height:6px; border-radius:50%; background:#44ff88;
+    box-shadow:0 0 6px #44ff88,0 0 12px #44ff8855;
+    animation:led-blink 3s infinite;
+  }
+  @keyframes led-blink{0%,100%{opacity:1}48%{opacity:1}50%{opacity:0.2}52%{opacity:1}}
+
+  .screen-bezel {
+    width:268px; background:#0a0a0c; border-radius:8px; padding:10px;
+    border:2px solid #1a1d24;
+    box-shadow:inset 0 0 20px rgba(0,0,0,0.6),0 2px 8px rgba(0,0,0,0.5);
+    position:relative;
+  }
+  .screen-bezel::before {
+    content:'POCKET CHESS v1.0'; position:absolute; top:4px; left:50%; transform:translateX(-50%);
+    font-size:5px; color:#333; letter-spacing:1px; white-space:nowrap; font-family:'Share Tech Mono',monospace;
+  }
+  #gameScreen {
+    width:248px; height:308px; background:#0d1008; border:1px solid #1a1d24;
+    overflow:hidden; position:relative;
+    display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px 2px;
+  }
+
+  /* Status */
+  #statusBar { width:100%; display:flex; justify-content:space-between; align-items:center; padding:0 2px; }
+  #statusText {
+    font-size:7px; color:var(--accent); letter-spacing:1px; font-family:'Pixelify Sans',monospace;
+    text-shadow:0 0 8px rgba(232,201,106,0.5); min-width:80px;
+  }
+  #turnIndicator { font-size:7px; color:var(--text); letter-spacing:1px; font-family:'Share Tech Mono',monospace; }
+
+  /* Captured */
+  .captured-row {
+    width:100%; min-height:14px; display:flex; flex-wrap:wrap; align-items:center;
+    gap:0px; padding:0 2px; font-size:11px; line-height:1;
+    filter:drop-shadow(0 0 2px rgba(106,180,232,0.3));
+  }
+  .captured-row .cap-piece { opacity:0.75; animation:capAppear 0.3s ease; }
+  @keyframes capAppear{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:0.75}}
+
+  /* Board */
+  #boardWrapper { position:relative; display:flex; align-items:center; justify-content:center; }
+  #board {
+    display:grid;
+    grid-template-columns:repeat(8, var(--sq-size));
+    grid-template-rows:repeat(8, var(--sq-size));
+    border:2px solid #2a2d3a;
+    box-shadow:0 0 20px rgba(0,0,0,0.8);
+    image-rendering:pixelated;
+  }
+  #board.shake { animation:shake 0.3s ease; }
+  @keyframes shake{0%,100%{transform:translate(0,0)}15%{transform:translate(-3px,2px)}30%{transform:translate(3px,-2px)}45%{transform:translate(-2px,3px)}60%{transform:translate(2px,-1px)}75%{transform:translate(-1px,2px)}90%{transform:translate(1px,-1px)}}
+
+  .sq {
+    width:var(--sq-size); height:var(--sq-size);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1; position:relative; cursor:default;
+    transition:background-color 0.12s; user-select:none;
+  }
+  .sq.light{background:var(--light-sq)} .sq.dark{background:var(--dark-sq)}
+  .sq.selected{background:var(--select)!important;box-shadow:inset 0 0 0 2px var(--accent)}
+  .sq.valid-move::after{content:'';position:absolute;inset:0;background:var(--valid);animation:validPulse 1s infinite}
+  @keyframes validPulse{0%,100%{opacity:0.6}50%{opacity:1}}
+  .sq.last-move{background:var(--last-move)!important}
+  .sq.in-check{background:var(--check)!important;animation:checkFlash 0.5s ease}
+  @keyframes checkFlash{0%,100%{opacity:1}50%{opacity:0.3}}
+  .sq .piece{display:block;z-index:2;pointer-events:none;transition:transform 0.08s;text-shadow:0 1px 3px rgba(0,0,0,0.6)}
+  .sq.cursor{box-shadow:inset 0 0 0 2px var(--accent2)}
+  .sq.cursor::before{content:'';position:absolute;inset:0;background:rgba(106,180,232,0.1);animation:cursorPulse 0.8s infinite}
+  @keyframes cursorPulse{0%,100%{opacity:0.5}50%{opacity:1}}
+
+  /* Motion blur */
+  .piece-trail{position:fixed;pointer-events:none;z-index:99;font-size:14px;line-height:1;animation:trailFade 0.25s ease forwards}
+  @keyframes trailFade{from{opacity:0.5;transform:scale(1)}to{opacity:0;transform:scale(0.6)}}
+  .piece-moving{
+    position:fixed;pointer-events:none;z-index:100;font-size:16px;line-height:1;
+    transition:left 0.18s cubic-bezier(0.25,0.46,0.45,0.94),top 0.18s cubic-bezier(0.25,0.46,0.45,0.94);
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+  }
+
+  /* Labels */
+  #rankLabels{position:absolute;left:-12px;top:0;display:flex;flex-direction:column;height:calc(8 * var(--sq-size))}
+  .rank-label{height:var(--sq-size);display:flex;align-items:center;justify-content:center;font-size:6px;color:var(--dim);font-family:'Share Tech Mono',monospace;width:10px}
+  #fileLabels{display:flex;flex-direction:row;width:calc(8 * var(--sq-size));margin-top:2px}
+  .file-label{width:var(--sq-size);text-align:center;font-size:6px;color:var(--dim);font-family:'Share Tech Mono',monospace}
+
+  /* Move log */
+  #moveLog{width:100%;max-height:22px;overflow:hidden;font-size:6px;color:var(--dim);padding:0 2px;display:flex;gap:4px;flex-wrap:nowrap}
+  .move-entry{white-space:nowrap}
+  .move-entry.last{color:var(--accent2)}
+
+  /* ---- CONTROLS ---- */
+  .controls-section{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+  .select-start-row{display:flex;gap:16px}
+  .btn-pill {
+    width:62px; height:18px; border-radius:9px;
+    background:linear-gradient(180deg,#2a2d3a,#1a1d24);
+    border:1px solid #3a3d4a;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Pixelify Sans',monospace; font-size:6px; color:#888;
+    cursor:pointer; user-select:none; letter-spacing:1px;
+    transform:rotate(-8deg);
+    box-shadow:0 3px 0 #0a0a0c;
+    transition:transform 0.05s,box-shadow 0.05s;
+  }
+  .btn-pill:active,.btn-pill.pressed{transform:rotate(-8deg) translateY(2px);box-shadow:0 1px 0 #0a0a0c}
+
+  .controls-row{display:flex;justify-content:space-between;align-items:center;width:100%;gap:6px}
+
+  /* D-PAD — bigger */
+  .dpad{width:96px;height:96px;position:relative;flex-shrink:0}
+  .dpad-center{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg,#2a2d3a,#1a1d24);
+    border:1px solid #3a3d4a;z-index:2;
+  }
+  .dpad-arm{
+    position:absolute;background:linear-gradient(160deg,#2a2d3a,#1a1d24);
+    border:1px solid #3a3d4a;border-radius:4px;cursor:pointer;user-select:none;
+    box-shadow:0 4px 0 #0a0a0c;display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:#777;transition:transform 0.05s,box-shadow 0.05s;
+    width:33px;height:33px;
+  }
+  .dpad-arm:active,.dpad-arm.pressed{background:linear-gradient(160deg,#1a1d24,#111318);transform:translateY(3px)!important;box-shadow:0 1px 0 #0a0a0c!important}
+  .dpad-up   {top:0;left:31px;border-radius:5px 5px 2px 2px}
+  .dpad-down {bottom:0;left:31px;border-radius:2px 2px 5px 5px}
+  .dpad-left {top:31px;left:0;border-radius:5px 2px 2px 5px}
+  .dpad-right{top:31px;right:0;border-radius:2px 5px 5px 2px}
+  .dpad-up::after{content:'▲'}.dpad-down::after{content:'▼'}.dpad-left::after{content:'◀'}.dpad-right::after{content:'▶'}
+
+  /* BTN CLUSTER — bigger */
+  .btn-cluster{width:96px;height:96px;position:relative;flex-shrink:0}
+  .btn-action{
+    position:absolute;width:32px;height:32px;border-radius:50%;
+    cursor:pointer;user-select:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Pixelify Sans',monospace;font-size:9px;color:rgba(255,255,255,0.9);
+    text-shadow:0 1px 2px rgba(0,0,0,0.5);
+    transition:transform 0.05s,box-shadow 0.05s;border:none;outline:none;
+  }
+  .btn-action:active,.btn-action.pressed{transform:translateY(3px)!important}
+  .btn-a{top:32px;right:0;background:radial-gradient(circle at 35% 35%,#e87a3a,#c45520);box-shadow:0 4px 0 #6a2a08,0 5px 10px rgba(0,0,0,0.4)}
+  .btn-a:active,.btn-a.pressed{box-shadow:0 1px 0 #6a2a08!important}
+  .btn-b{bottom:0;left:32px;background:radial-gradient(circle at 35% 35%,#6ab4e8,#3a80c0);box-shadow:0 4px 0 #1a4a80,0 5px 10px rgba(0,0,0,0.4)}
+  .btn-b:active,.btn-b.pressed{box-shadow:0 1px 0 #1a4a80!important}
+  .btn-x{top:32px;left:0;background:radial-gradient(circle at 35% 35%,#7ae870,#3ab030);box-shadow:0 4px 0 #1a6010,0 5px 10px rgba(0,0,0,0.4)}
+  .btn-x:active,.btn-x.pressed{box-shadow:0 1px 0 #1a6010!important}
+  .btn-y{top:0;left:32px;background:radial-gradient(circle at 35% 35%,#e870b0,#c03080);box-shadow:0 4px 0 #6a1040,0 5px 10px rgba(0,0,0,0.4)}
+  .btn-y:active,.btn-y.pressed{box-shadow:0 1px 0 #6a1040!important}
+
+  .middle-col{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .speaker-grille{display:flex;gap:3px}
+  .sp-dot{width:3px;height:3px;background:#2a2d3a;border-radius:50%}
+
+  /* ---- OVERLAYS ---- */
+  #overlay{
+    position:absolute;inset:0;z-index:200;
+    display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,0,0,0.88);gap:8px;
+  }
+  #overlay.show{display:flex}
+  #overlayTitle{
+    font-family:'Pixelify Sans',monospace;font-size:16px;color:var(--accent);
+    text-shadow:0 0 20px rgba(232,201,106,0.8);text-align:center;letter-spacing:2px;
+    animation:titlePop 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+  @keyframes titlePop{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+  #overlayMsg{font-size:8px;color:var(--text);text-align:center;line-height:1.6}
+  #overlayBtn{
+    margin-top:8px;padding:7px 18px;background:transparent;
+    border:1px solid var(--accent);color:var(--accent);
+    font-family:'Pixelify Sans',monospace;font-size:9px;cursor:pointer;
+    letter-spacing:2px;transition:all 0.2s;
+  }
+  #overlayBtn:hover{background:var(--accent);color:#0d0d0d}
+
+  /* Promo */
+  #promoPanel{
+    position:absolute;inset:0;z-index:300;
+    display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,0,0,0.92);gap:10px;
+  }
+  #promoPanel.show{display:flex}
+  #promoPanel .promo-title{font-family:'Pixelify Sans',monospace;font-size:11px;color:var(--accent);letter-spacing:2px}
+  .promo-choices{display:flex;gap:12px}
+  .promo-piece{
+    font-size:28px;cursor:pointer;padding:4px;
+    border:1px solid transparent;border-radius:4px;transition:all 0.15s;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+  }
+  .promo-piece:hover{border-color:var(--accent);transform:scale(1.2)}
+
+  /* Difficulty screen — FULL overlay on gameScreen */
+  #diffPanel{
+    position:absolute;inset:0;z-index:400;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:#0d1008;gap:14px;
+  }
+  #diffPanel .diff-title{
+    font-family:'Pixelify Sans',monospace;font-size:14px;color:var(--accent);
+    letter-spacing:3px;text-shadow:0 0 15px rgba(232,201,106,0.6);
+  }
+  .diff-subtitle{font-size:7px;color:var(--dim);letter-spacing:1px;margin-top:-8px}
+  .diff-options{display:flex;flex-direction:column;gap:8px;width:140px}
+  .diff-btn{
+    padding:7px 12px;background:transparent;border:1px solid #2a2d3a;
+    color:var(--text);font-family:'Pixelify Sans',monospace;font-size:9px;
+    cursor:pointer;letter-spacing:2px;text-align:center;transition:all 0.15s;
+    outline:none;
+  }
+  .diff-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(232,201,106,0.05)}
+  .diff-btn.selected{border-color:var(--accent2)!important;color:var(--accent2)!important;background:rgba(106,180,232,0.1)!important}
+  .diff-hint{font-size:6px;color:var(--dim);letter-spacing:1px}
+</style>
+</head>
+<body>
+<div id="console">
+  <div class="console-top">
+    <div class="console-brand">♟ PocketChess</div>
+    <div class="led"></div>
+  </div>
+
+  <div class="screen-bezel">
+    <div id="gameScreen">
+
+      <!-- Difficulty panel (absolute over entire screen) -->
+      <div id="diffPanel">
+        <div class="diff-title">♟ CHESS</div>
+        <div class="diff-subtitle">SELECT DIFFICULTY</div>
+        <div class="diff-options" id="diffOptions">
+          <button class="diff-btn" data-level="0">EASY</button>
+          <button class="diff-btn selected" data-level="1">NORMAL</button>
+          <button class="diff-btn" data-level="2">HARD</button>
+          <button class="diff-btn" data-level="3">EXTREME</button>
+        </div>
+        <div class="diff-hint">↑↓ SELECT  •  A/ENTER CONFIRM</div>
+      </div>
+
+      <!-- Game UI -->
+      <div id="statusBar">
+        <div id="statusText">YOUR TURN</div>
+        <div id="turnIndicator">♔ WHITE</div>
+      </div>
+      <div class="captured-row" id="capturedByBlack"></div>
+      <div id="boardWrapper">
+        <div id="rankLabels">
+          <div class="rank-label">8</div><div class="rank-label">7</div>
+          <div class="rank-label">6</div><div class="rank-label">5</div>
+          <div class="rank-label">4</div><div class="rank-label">3</div>
+          <div class="rank-label">2</div><div class="rank-label">1</div>
+        </div>
+        <div>
+          <div id="board"></div>
+          <div id="fileLabels">
+            <div class="file-label">a</div><div class="file-label">b</div>
+            <div class="file-label">c</div><div class="file-label">d</div>
+            <div class="file-label">e</div><div class="file-label">f</div>
+            <div class="file-label">g</div><div class="file-label">h</div>
+          </div>
+        </div>
+        <div id="overlay">
+          <div id="overlayTitle">CHECKMATE!</div>
+          <div id="overlayMsg">You win!</div>
+          <button id="overlayBtn">PLAY AGAIN</button>
+        </div>
+        <div id="promoPanel">
+          <div class="promo-title">PROMOTE</div>
+          <div class="promo-choices" id="promoChoices"></div>
+        </div>
+      </div>
+      <div class="captured-row" id="capturedByWhite"></div>
+      <div id="moveLog"></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-section">
+    <div class="select-start-row">
+      <div class="btn-pill" id="btn-select">SELECT</div>
+      <div class="btn-pill" id="btn-start">START</div>
+    </div>
+    <div class="controls-row">
+      <div class="dpad">
+        <div class="dpad-arm dpad-up"    id="btn-up"></div>
+        <div class="dpad-arm dpad-down"  id="btn-down"></div>
+        <div class="dpad-arm dpad-left"  id="btn-left"></div>
+        <div class="dpad-arm dpad-right" id="btn-right"></div>
+        <div class="dpad-center"></div>
+      </div>
+      <div class="middle-col">
+        <div class="speaker-grille">
+          <div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div>
+          <div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div>
+        </div>
+      </div>
+      <div class="btn-cluster">
+        <div class="btn-action btn-y" id="btn-y">Y</div>
+        <div class="btn-action btn-x" id="btn-x">X</div>
+        <div class="btn-action btn-a" id="btn-a">A</div>
+        <div class="btn-action btn-b" id="btn-b">B</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  AUDIO
+// ============================================================
+let audioCtx;
+function getAudio(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playSfx(freq,endFreq,type,dur,vol,delay){
+  try{
+    const ac=getAudio(); delay=delay||0;
+    const osc=ac.createOscillator(), gain=ac.createGain();
+    osc.type=type||'square';
+    osc.frequency.setValueAtTime(freq,ac.currentTime+delay);
+    if(endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(endFreq,1),ac.currentTime+delay+dur);
+    gain.gain.setValueAtTime(vol||0.07,ac.currentTime+delay);
+    gain.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+delay+dur);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start(ac.currentTime+delay); osc.stop(ac.currentTime+delay+dur);
+  }catch(e){}
+}
+function sndMove()    { playSfx(300,380,'square',0.07,0.06); }
+function sndSelect()  { playSfx(500,700,'sine',0.1,0.08); }
+function sndDeselect(){ playSfx(400,200,'sine',0.09,0.06); }
+function sndCapture() { playSfx(200,80,'sawtooth',0.15,0.12); playSfx(600,200,'square',0.1,0.06,0.05); }
+function sndCheck()   { [0,0.05,0.1].forEach((d,i)=>playSfx(800-i*100,400,'square',0.12,0.1,d)); }
+function sndCheckmate(){ [800,600,400,200].forEach((f,i)=>playSfx(f,f*0.5,'sawtooth',0.2,0.12,i*0.12)); }
+function sndCursor()  { playSfx(180,200,'square',0.04,0.03); }
+function sndInvalid() { playSfx(150,120,'square',0.15,0.08); }
+function sndCastle()  { playSfx(400,500,'square',0.08,0.08); playSfx(500,620,'square',0.08,0.06,0.09); }
+function sndPromo()   { [400,600,800,1000].forEach((f,i)=>playSfx(f,f*1.2,'sine',0.15,0.08,i*0.07)); }
+function sndDiffNav() { playSfx(260,300,'square',0.06,0.05); }
+function sndDiffConfirm(){ playSfx(440,660,'sine',0.15,0.1); playSfx(660,880,'sine',0.12,0.08,0.1); }
+
+// ============================================================
+//  CHESS ENGINE
+// ============================================================
+const GLYPHS = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+function col(p)  { return p?(p[0]==='w'?'white':'black'):null; }
+function typ(p)  { return p?p[1]:null; }
+function opp(c)  { return c==='white'?'black':'white'; }
+
+function initBoard(){
+  const b=Array(8).fill(null).map(()=>Array(8).fill(null));
+  const back=['R','N','B','Q','K','B','N','R'];
+  for(let c=0;c<8;c++){
+    b[0][c]='b'+back[c]; b[1][c]='bP';
+    b[6][c]='wP';        b[7][c]='w'+back[c];
+  }
+  return b;
+}
+
+function getMoves(board,r,c,ep,castling){
+  const p=board[r][c]; if(!p) return [];
+  const pc=col(p), t=typ(p);
+  const moves=[];
+  const inBounds=(r,c)=>r>=0&&r<=7&&c>=0&&c<=7;
+  const add=(tr,tc,special)=>{
+    if(!inBounds(tr,tc)) return;
+    const tgt=board[tr][tc];
+    if(tgt&&col(tgt)===pc) return;
+    moves.push({fr:r,fc:c,tr,tc,special:special||null});
+  };
+  const slide=(dr,dc)=>{
+    let nr=r+dr,nc=c+dc;
+    while(inBounds(nr,nc)){
+      const t2=board[nr][nc];
+      if(t2){if(col(t2)!==pc) moves.push({fr:r,fc:c,tr:nr,tc:nc,special:null});break;}
+      moves.push({fr:r,fc:c,tr:nr,tc:nc,special:null}); nr+=dr; nc+=dc;
+    }
+  };
+  if(t==='P'){
+    const dir=pc==='white'?-1:1;
+    const startRow=pc==='white'?6:1;
+    const promoRow=pc==='white'?0:7;
+    if(inBounds(r+dir,c)&&!board[r+dir][c]){
+      const sp=(r+dir===promoRow)?'promo':null;
+      moves.push({fr:r,fc:c,tr:r+dir,tc:c,special:sp});
+      if(r===startRow&&!board[r+2*dir][c])
+        moves.push({fr:r,fc:c,tr:r+2*dir,tc:c,special:'double'});
+    }
+    for(const dc of[-1,1]){
+      const tc=c+dc,tr=r+dir;
+      if(!inBounds(tr,tc)) continue;
+      const sp2=(tr===promoRow)?'promo':null;
+      if(board[tr][tc]&&col(board[tr][tc])!==pc)
+        moves.push({fr:r,fc:c,tr,tc,special:sp2});
+      if(ep&&ep[0]===tr&&ep[1]===tc)
+        moves.push({fr:r,fc:c,tr,tc,special:'enpassant'});
+    }
+  } else if(t==='N'){
+    for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) add(r+dr,c+dc);
+  } else if(t==='B'){
+    for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]]) slide(dr,dc);
+  } else if(t==='R'){
+    for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]) slide(dr,dc);
+  } else if(t==='Q'){
+    for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) slide(dr,dc);
+  } else if(t==='K'){
+    for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) add(r+dr,c+dc);
+    const row=pc==='white'?7:0;
+    const noCastle={white:{kside:false,qside:false},black:{kside:false,qside:false}};
+    if(r===row&&c===4){
+      if(castling[pc].kside&&!board[row][5]&&!board[row][6]
+        &&!isAttacked(board,row,4,opp(pc),noCastle)
+        &&!isAttacked(board,row,5,opp(pc),noCastle)
+        &&!isAttacked(board,row,6,opp(pc),noCastle))
+        moves.push({fr:row,fc:4,tr:row,tc:6,special:'castle-k'});
+      if(castling[pc].qside&&!board[row][3]&&!board[row][2]&&!board[row][1]
+        &&!isAttacked(board,row,4,opp(pc),noCastle)
+        &&!isAttacked(board,row,3,opp(pc),noCastle)
+        &&!isAttacked(board,row,2,opp(pc),noCastle))
+        moves.push({fr:row,fc:4,tr:row,tc:2,special:'castle-q'});
+    }
+  }
+  return moves;
+}
+
+function isAttacked(board,r,c,byColor,castling){
+  const noCastle=castling||{white:{kside:false,qside:false},black:{kside:false,qside:false}};
+  for(let rr=0;rr<8;rr++) for(let cc=0;cc<8;cc++){
+    const p=board[rr][cc]; if(!p||col(p)!==byColor) continue;
+    const ms=getMoves(board,rr,cc,null,noCastle);
+    if(ms.some(m=>m.tr===r&&m.tc===c)) return true;
+  }
+  return false;
+}
+
+function findKing(board,color){
+  const target=color==='white'?'wK':'bK';
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(board[r][c]===target) return [r,c];
+  return null;
+}
+
+function applyMove(board,move,ep,castling){
+  const nb=board.map(row=>[...row]);
+  const{fr,fc,tr,tc,special,promo}=move;
+  const piece=nb[fr][fc];
+  let captured=nb[tr][tc];
+  nb[tr][tc]=piece; nb[fr][fc]=null;
+  const newCastling={white:{...castling.white},black:{...castling.black}};
+  let newEp=null;
+
+  if(special==='double'){
+    // ep square is the square BEHIND the pawn (where it can be captured)
+    const epRow=col(piece)==='white'?tr+1:tr-1;
+    newEp=[epRow,tc];
+  }
+  if(special==='enpassant'){
+    // captured pawn is on same row as from, same col as to
+    const capRow=col(piece)==='white'?tr+1:tr-1;
+    captured=nb[capRow][tc]; nb[capRow][tc]=null;
+  }
+  if(special==='castle-k'){ nb[tr][tc-1]=nb[tr][7]; nb[tr][7]=null; }
+  if(special==='castle-q'){ nb[tr][tc+1]=nb[tr][0]; nb[tr][0]=null; }
+  if(promo) nb[tr][tc]=col(piece)[0]+promo;
+
+  if(typ(piece)==='K') newCastling[col(piece)]={kside:false,qside:false};
+  if(typ(piece)==='R'){
+    const pc=col(piece);
+    if(fc===7) newCastling[pc].kside=false;
+    if(fc===0) newCastling[pc].qside=false;
+  }
+  // If rook captured
+  if(captured&&typ(captured)==='R'){
+    const pc=col(captured);
+    if(tc===7) newCastling[pc].kside=false;
+    if(tc===0) newCastling[pc].qside=false;
+  }
+  return{board:nb,captured,ep:newEp,castling:newCastling};
+}
+
+function getLegalMoves(board,color,ep,castling){
+  const all=[];
+  const noCastle={white:{kside:false,qside:false},black:{kside:false,qside:false}};
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c]; if(!p||col(p)!==color) continue;
+    const ms=getMoves(board,r,c,ep,castling);
+    for(const m of ms){
+      // For promo: test each promotion piece (use Q for legality, others handled in UI)
+      const promoList=m.special==='promo'?['Q','R','B','N']:[null];
+      for(const prom of promoList){
+        const mm={...m,promo:prom};
+        const{board:nb,ep:nep,castling:nc}=applyMove(board,mm,ep,castling);
+        const king=findKing(nb,color);
+        if(king&&!isAttacked(nb,king[0],king[1],opp(color),noCastle)){
+          // Only push one move per source move to avoid duplicates (promo handled in UI)
+          if(!prom||prom==='Q') all.push({...m});
+          break;
+        }
+        break; // Only need one promo to test legality
+      }
+    }
+  }
+  return all;
+}
+
+function isInCheck(board,color,ep,castling){
+  const king=findKing(board,color);
+  if(!king) return false;
+  return isAttacked(board,king[0],king[1],opp(color),{white:{kside:false,qside:false},black:{kside:false,qside:false}});
+}
+
+// ============================================================
+//  AI
+// ============================================================
+const PVAL={P:100,N:320,B:330,R:500,Q:900,K:20000};
+const PST={
+  P:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
+  N:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
+  B:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
+  R:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
+  Q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],
+  K:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]]
+};
+
+function evalBoard(board){
+  let s=0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c]; if(!p) continue;
+    const t=typ(p),pc=col(p);
+    const pstRow=pc==='white'?r:7-r;
+    s+=(pc==='white'?1:-1)*((PVAL[t]||0)+(PST[t]?PST[t][pstRow][c]:0));
+  }
+  return s;
+}
+
+function minimax(board,depth,alpha,beta,maximizing,ep,castling){
+  const color=maximizing?'black':'white';
+  const lm=getLegalMoves(board,color,ep,castling);
+  if(depth===0||lm.length===0){
+    if(lm.length===0) return isInCheck(board,color,ep,castling)?(maximizing?-50000:50000):0;
+    return evalBoard(board);
+  }
+  lm.sort((a,b)=>(board[b.tr][b.tc]?1:0)-(board[a.tr][a.tc]?1:0));
+  if(maximizing){
+    let best=-Infinity;
+    for(const m of lm){
+      const{board:nb,ep:nep,castling:nc}=applyMove(board,m,ep,castling);
+      const v=minimax(nb,depth-1,alpha,beta,false,nep,nc);
+      best=Math.max(best,v); alpha=Math.max(alpha,v);
+      if(beta<=alpha) break;
+    }
+    return best;
+  } else {
+    let best=Infinity;
+    for(const m of lm){
+      const{board:nb,ep:nep,castling:nc}=applyMove(board,m,ep,castling);
+      const v=minimax(nb,depth-1,alpha,beta,true,nep,nc);
+      best=Math.min(best,v); beta=Math.min(beta,v);
+      if(beta<=alpha) break;
+    }
+    return best;
+  }
+}
+
+function getAIMove(board,ep,castling,diff){
+  const depths=[1,2,3,4];
+  const depth=depths[diff]||2;
+  const lm=getLegalMoves(board,'black',ep,castling);
+  if(!lm.length) return null;
+  if(diff===0&&Math.random()<0.6) return lm[Math.floor(Math.random()*lm.length)];
+  let best=-Infinity, bestMove=lm[0];
+  for(const m of lm){
+    const{board:nb,ep:nep,castling:nc}=applyMove(board,m,ep,castling);
+    const v=minimax(nb,depth-1,-Infinity,Infinity,false,nep,nc);
+    const noise=diff<=1?(Math.random()-0.5)*25:0;
+    if(v+noise>best){best=v+noise;bestMove=m;}
+  }
+  return bestMove;
+}
+
+// ============================================================
+//  GAME STATE
+// ============================================================
+let G={};
+function newGame(diff){
+  G={
+    board:initBoard(),cursor:[6,4],selected:null,validMoves:[],
+    turn:'white',ep:null,
+    castling:{white:{kside:true,qside:true},black:{kside:true,qside:true}},
+    capByWhite:[],capByBlack:[],
+    moveHistory:[],lastMove:null,
+    gameOver:false,diff:diff,aiThinking:false,promoMove:null
+  };
+}
+
+// ============================================================
+//  RENDER
+// ============================================================
+const boardEl=document.getElementById('board');
+const statusText=document.getElementById('statusText');
+const turnInd=document.getElementById('turnIndicator');
+const capBlackEl=document.getElementById('capturedByBlack');
+const capWhiteEl=document.getElementById('capturedByWhite');
+const moveLogEl=document.getElementById('moveLog');
+let sqEls=[];
+
+function buildBoard(){
+  boardEl.innerHTML=''; sqEls=[];
+  for(let r=0;r<8;r++){
+    const row=[];
+    for(let c=0;c<8;c++){
+      const sq=document.createElement('div');
+      sq.className='sq '+((r+c)%2===0?'light':'dark');
+      boardEl.appendChild(sq); row.push(sq);
+    }
+    sqEls.push(row);
+  }
+}
+
+function renderBoard(){
+  if(!sqEls.length) return;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const sq=sqEls[r][c];
+    const p=G.board[r][c];
+    let cls='sq '+((r+c)%2===0?'light':'dark');
+    if(G.lastMove&&((G.lastMove.fr===r&&G.lastMove.fc===c)||(G.lastMove.tr===r&&G.lastMove.tc===c))) cls+=' last-move';
+    if(G.selected&&G.selected[0]===r&&G.selected[1]===c) cls+=' selected';
+    if(G.validMoves.some(m=>m.tr===r&&m.tc===c)) cls+=' valid-move';
+    if(G.cursor[0]===r&&G.cursor[1]===c) cls+=' cursor';
+    if(p&&typ(p)==='K'&&isInCheck(G.board,col(p),G.ep,G.castling)) cls+=' in-check';
+    sq.className=cls;
+    sq.innerHTML=p?`<span class="piece ${col(p)}">${GLYPHS[p]}</span>`:'';
+  }
+  if(G.gameOver) statusText.textContent='GAME OVER';
+  else if(G.aiThinking) statusText.textContent='AI...';
+  else if(G.turn==='white') statusText.textContent=G.selected?'MOVE TO →':'YOUR TURN';
+  else statusText.textContent='AI TURN';
+  turnInd.textContent=G.turn==='white'?'♔ WHITE':'♚ BLACK';
+  capBlackEl.innerHTML=G.capByBlack.map(p=>`<span class="cap-piece">${GLYPHS[p]}</span>`).join('');
+  capWhiteEl.innerHTML=G.capByWhite.map(p=>`<span class="cap-piece">${GLYPHS[p]}</span>`).join('');
+  const hist=G.moveHistory.slice(-10);
+  moveLogEl.innerHTML=hist.map((m,i,a)=>`<span class="move-entry${i===a.length-1?' last':''}">${m}</span>`).join(' ');
+}
+
+// ============================================================
+//  MOTION BLUR ANIMATION
+// ============================================================
+function animateMove(piece,fr,fc,tr,tc,cb){
+  const fromRect=sqEls[fr][fc].getBoundingClientRect();
+  const toRect=sqEls[tr][tc].getBoundingClientRect();
+  // Trails
+  for(let i=1;i<=3;i++){
+    const f=i/4;
+    const t=document.createElement('div');
+    t.className='piece-trail';
+    t.textContent=GLYPHS[piece];
+    t.style.cssText=`left:${fromRect.left+(toRect.left-fromRect.left)*f+fromRect.width/2-9}px;top:${fromRect.top+(toRect.top-fromRect.top)*f+fromRect.height/2-9}px;opacity:${0.4-i*0.1};font-size:${16-i*2}px;`;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),300);
+  }
+  // Moving piece
+  const el=document.createElement('div');
+  el.className='piece-moving';
+  el.textContent=GLYPHS[piece];
+  el.style.cssText=`left:${fromRect.left+fromRect.width/2-9}px;top:${fromRect.top+fromRect.height/2-9}px;`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>{
+    el.style.left=`${toRect.left+toRect.width/2-9}px`;
+    el.style.top=`${toRect.top+toRect.height/2-9}px`;
+  });
+  setTimeout(()=>{el.remove();cb();},200);
+}
+
+function shakeBoard(){ boardEl.classList.add('shake'); setTimeout(()=>boardEl.classList.remove('shake'),300); }
+
+// ============================================================
+//  MOVE LOGIC
+// ============================================================
+function toNotation(move,piece,inCheck,isMate){
+  const f='abcdefgh',ra='87654321';
+  const t=typ(piece);
+  if(move.special==='castle-k') return 'O-O'+(isMate?'#':inCheck?'+':'');
+  if(move.special==='castle-q') return 'O-O-O'+(isMate?'#':inCheck?'+':'');
+  const sym=t==='P'?'':GLYPHS[piece];
+  const cap=G.board[move.tr][move.tc]?'×':'';
+  const dst=f[move.tc]+ra[move.tr];
+  const pr=move.promo?'='+move.promo:'';
+  return sym+cap+dst+pr+(isMate?'#':inCheck?'+':'');
+}
+
+function doExecute(move,piece,nb,captured,nep,nc){
+  if(captured){
+    if(col(captured)==='white') G.capByBlack.push(captured);
+    else G.capByWhite.push(captured);
+    sndCapture(); shakeBoard();
+  } else if(move.special==='castle-k'||move.special==='castle-q'){
+    sndCastle();
+  } else {
+    sndMove();
+  }
+  G.board=nb; G.ep=nep; G.castling=nc;
+  G.lastMove=move; G.selected=null; G.validMoves=[];
+  G.turn=opp(G.turn);
+  const lm=getLegalMoves(G.board,G.turn,G.ep,G.castling);
+  const inCheck=isInCheck(G.board,G.turn,G.ep,G.castling);
+  const isMate=lm.length===0&&inCheck;
+  const isStale=lm.length===0&&!inCheck;
+  G.moveHistory.push(toNotation(move,piece,inCheck,isMate));
+  if(inCheck) sndCheck();
+  if(isMate) sndCheckmate();
+  renderBoard();
+  if(isMate){
+    G.gameOver=true;
+    setTimeout(()=>showOverlay(G.turn==='white'?'YOU LOSE':'YOU WIN!',G.turn==='white'?'AI delivers checkmate.':'Brilliant! Checkmate!'),400);
+    return;
+  }
+  if(isStale){G.gameOver=true;setTimeout(()=>showOverlay('STALEMATE','Draw!'),400);return;}
+  if(G.turn==='black'){G.aiThinking=true;renderBoard();setTimeout(doAIMove,350);}
+}
+
+function executeMove(move){
+  const piece=G.board[move.fr][move.fc];
+  if(move.special==='promo'){
+    G.promoMove=move; showPromo(piece); return;
+  }
+  const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,move,G.ep,G.castling);
+  doExecute(move,piece,nb,captured,nep,nc);
+}
+
+function doAIMove(){
+  const move=getAIMove(G.board,G.ep,G.castling,G.diff);
+  G.aiThinking=false;
+  if(!move) return;
+  const piece=G.board[move.fr][move.fc];
+  const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,move,G.ep,G.castling);
+  // AI always promotes to queen
+  if(move.special==='promo'){ nb[move.tr][move.tc]='bQ'; move.promo='Q'; }
+  animateMove(piece,move.fr,move.fc,move.tr,move.tc,()=>doExecute(move,piece,nb,captured,nep,nc));
+}
+
+function selectPiece(r,c){
+  const p=G.board[r][c];
+  if(!p||col(p)!==G.turn){sndInvalid();return;}
+  G.selected=[r,c];
+  G.validMoves=getLegalMoves(G.board,G.turn,G.ep,G.castling).filter(m=>m.fr===r&&m.fc===c);
+  sndSelect(); renderBoard();
+}
+
+function deselectPiece(){ G.selected=null; G.validMoves=[]; sndDeselect(); renderBoard(); }
+
+function handleAction(){
+  if(G.gameOver||G.aiThinking||G.turn!=='white') return;
+  const[r,c]=G.cursor;
+  if(G.selected){
+    const mv=G.validMoves.find(m=>m.tr===r&&m.tc===c);
+    if(mv){
+      const piece=G.board[mv.fr][mv.fc];
+      G.selected=null; G.validMoves=[];
+      animateMove(piece,mv.fr,mv.fc,mv.tr,mv.tc,()=>executeMove(mv));
+    } else if(G.board[r][c]&&col(G.board[r][c])==='white'){
+      selectPiece(r,c);
+    } else {
+      deselectPiece();
+    }
+  } else {
+    const p=G.board[r][c];
+    if(p&&col(p)==='white') selectPiece(r,c);
+    else sndInvalid();
+  }
+}
+
+function handleCancel(){if(G.selected) deselectPiece();}
+
+function moveCursor(dr,dc){
+  if(G.gameOver||G.aiThinking) return;
+  G.cursor=[Math.max(0,Math.min(7,G.cursor[0]+dr)),Math.max(0,Math.min(7,G.cursor[1]+dc))];
+  sndCursor(); renderBoard();
+}
+
+// ============================================================
+//  PROMOTION UI
+// ============================================================
+function showPromo(piece){
+  const pc=col(piece);
+  const choicesEl=document.getElementById('promoChoices');
+  choicesEl.innerHTML='';
+  for(const pt of['Q','R','B','N']){
+    const btn=document.createElement('div');
+    btn.className='promo-piece';
+    btn.textContent=GLYPHS[pc[0]+pt];
+    btn.onclick=()=>{
+      document.getElementById('promoPanel').classList.remove('show');
+      const move={...G.promoMove,promo:pt,special:null};
+      const piece2=G.board[move.fr][move.fc];
+      const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,G.promoMove,G.ep,G.castling);
+      nb[move.tr][move.tc]=pc[0]+pt;
+      sndPromo(); G.promoMove=null;
+      doExecute(move,piece2,nb,captured,nep,nc);
+    };
+    choicesEl.appendChild(btn);
+  }
+  document.getElementById('promoPanel').classList.add('show');
+}
+
+// ============================================================
+//  OVERLAYS
+// ============================================================
+function showOverlay(title,msg){
+  document.getElementById('overlayTitle').textContent=title;
+  document.getElementById('overlayMsg').textContent=msg;
+  document.getElementById('overlay').classList.add('show');
+}
+document.getElementById('overlayBtn').onclick=()=>{
+  document.getElementById('overlay').classList.remove('show');
+  showDiffPanel();
+};
+
+// ============================================================
+//  DIFFICULTY SCREEN — navigable with d-pad
+// ============================================================
+let diffCursor=1;
+const diffLevels=4;
+
+function showDiffPanel(){
+  const panel=document.getElementById('diffPanel');
+  panel.style.display='flex';
+  refreshDiffButtons();
+}
+function hideDiffPanel(){
+  document.getElementById('diffPanel').style.display='none';
+}
+function refreshDiffButtons(){
+  document.querySelectorAll('.diff-btn').forEach((btn,i)=>{
+    btn.classList.toggle('selected',i===diffCursor);
+  });
+}
+function diffNav(dir){
+  diffCursor=(diffCursor+dir+diffLevels)%diffLevels;
+  sndDiffNav(); refreshDiffButtons();
+}
+function diffConfirm(){
+  sndDiffConfirm();
+  hideDiffPanel();
+  newGame(diffCursor);
+  if(!sqEls.length) buildBoard();
+  renderBoard();
+}
+
+// Click on diff buttons also works
+document.getElementById('diffOptions').addEventListener('click',e=>{
+  const btn=e.target.closest('.diff-btn');
+  if(!btn) return;
+  diffCursor=parseInt(btn.dataset.level);
+  diffConfirm();
+});
+
+// ============================================================
+//  INPUT
+// ============================================================
+const diffPanelEl=()=>document.getElementById('diffPanel');
+
+function isOnDiffScreen(){ return diffPanelEl().style.display!=='none'; }
+
+document.getElementById('btn-up').onclick   =()=>{ if(isOnDiffScreen()) diffNav(-1); else moveCursor(-1,0); };
+document.getElementById('btn-down').onclick  =()=>{ if(isOnDiffScreen()) diffNav(1);  else moveCursor(1,0); };
+document.getElementById('btn-left').onclick  =()=>{ if(isOnDiffScreen()) diffNav(-1); else moveCursor(0,-1); };
+document.getElementById('btn-right').onclick =()=>{ if(isOnDiffScreen()) diffNav(1);  else moveCursor(0,1); };
+document.getElementById('btn-a').onclick     =()=>{ if(isOnDiffScreen()) diffConfirm(); else handleAction(); };
+document.getElementById('btn-x').onclick     =()=>{ if(isOnDiffScreen()) diffConfirm(); else handleAction(); };
+document.getElementById('btn-b').onclick     =()=>{ if(isOnDiffScreen()){} else handleCancel(); };
+document.getElementById('btn-y').onclick     =()=>{ if(isOnDiffScreen()){} else handleCancel(); };
+document.getElementById('btn-start').onclick =()=>showDiffPanel();
+document.getElementById('btn-select').onclick=()=>showDiffPanel();
+
+document.addEventListener('keydown',e=>{
+  if(isOnDiffScreen()){
+    if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();diffNav(-1);}
+    if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();diffNav(1);}
+    if(e.key==='Enter'||e.key===' '||e.key==='z'||e.key==='Z'){e.preventDefault();diffConfirm();}
+    return;
+  }
+  if(e.key==='ArrowUp'){e.preventDefault();moveCursor(-1,0);}
+  if(e.key==='ArrowDown'){e.preventDefault();moveCursor(1,0);}
+  if(e.key==='ArrowLeft'){e.preventDefault();moveCursor(0,-1);}
+  if(e.key==='ArrowRight'){e.preventDefault();moveCursor(0,1);}
+  if(e.key==='Enter'||e.key===' '||e.key==='z'||e.key==='Z') handleAction();
+  if(e.key==='Escape'||e.key==='x'||e.key==='X') handleCancel();
+});
+
+// Visual press feedback
+document.querySelectorAll('.dpad-arm,.btn-action,.btn-pill').forEach(btn=>{
+  btn.addEventListener('pointerdown',()=>btn.classList.add('pressed'));
+  btn.addEventListener('pointerup',()=>btn.classList.remove('pressed'));
+  btn.addEventListener('pointerleave',()=>btn.classList.remove('pressed'));
+});
+
+// ============================================================
+//  INIT
+// ============================================================
+buildBoard();
+showDiffPanel();
+</script>
+</body>
+</html>
