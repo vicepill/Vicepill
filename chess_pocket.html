@@ -566,18 +566,99 @@ function isInCheck(board,color,ep,castling){
 }
 
 // ============================================================
-//  AI
+//  STOCKFISH AI
 // ============================================================
+
+// Skill levels: depth / movetime ms per difficulty
+const SF_SKILL = [2, 8, 16, 20];       // Stockfish Skill Level (0-20)
+const SF_DEPTH  = [3, 8, 14, 20];      // search depth per diff
+const SF_TIME   = [200, 400, 800, 2000]; // movetime ms per diff
+
+let sfWorker = null;
+let sfReady  = false;
+let sfCallback = null;
+
+function initStockfish(){
+  if(sfWorker) return;
+  try {
+    // Use the single-file stockfish.js from cdnjs (works without SharedArrayBuffer)
+    sfWorker = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+    sfWorker.onmessage = e => {
+      const line = e.data;
+      if(line === 'uciok'){ sfWorker.postMessage('isready'); }
+      if(line === 'readyok'){ sfReady = true; }
+      if(typeof line === 'string' && line.startsWith('bestmove') && sfCallback){
+        const parts = line.split(' ');
+        const uci = parts[1]; // e.g. "e2e4" or "e7e8q"
+        const cb = sfCallback; sfCallback = null;
+        cb(uci);
+      }
+    };
+    sfWorker.onerror = err => {
+      console.warn('Stockfish worker error, falling back to minimax:', err);
+      sfWorker = null; sfReady = false;
+    };
+    sfWorker.postMessage('uci');
+  } catch(e) {
+    console.warn('Stockfish unavailable, falling back to minimax:', e);
+    sfWorker = null;
+  }
+}
+
+// --- FEN conversion ---
+function boardToFEN(board, turn, ep, castling){
+  const files = 'abcdefgh';
+  const pieceMap = {wP:'P',wN:'N',wB:'B',wR:'R',wQ:'Q',wK:'K',bP:'p',bN:'n',bB:'b',bR:'r',bQ:'q',bK:'k'};
+  let fen = '';
+  for(let r=0;r<8;r++){
+    let empty=0;
+    for(let c=0;c<8;c++){
+      const p=board[r][c];
+      if(p){ if(empty){fen+=empty;empty=0;} fen+=pieceMap[p]||'?'; }
+      else empty++;
+    }
+    if(empty) fen+=empty;
+    if(r<7) fen+='/';
+  }
+  fen += ' '+(turn==='white'?'w':'b')+' ';
+  let cast='';
+  if(castling.white.kside) cast+='K';
+  if(castling.white.qside) cast+='Q';
+  if(castling.black.kside) cast+='k';
+  if(castling.black.qside) cast+='q';
+  fen += (cast||'-')+' ';
+  if(ep){ fen += files[ep[1]]+(8-ep[0])+' '; } else { fen += '- '; }
+  fen += '0 1';
+  return fen;
+}
+
+// --- UCI move → internal move ---
+function uciToMove(uci, board, ep, castling){
+  const files='abcdefgh';
+  const fc=files.indexOf(uci[0]), fr=8-parseInt(uci[1]);
+  const tc=files.indexOf(uci[2]), tr=8-parseInt(uci[3]);
+  const promo=uci[4]?uci[4].toUpperCase():null;
+  // Find matching legal move
+  const lm=getLegalMoves(board,'black',ep,castling);
+  for(const m of lm){
+    if(m.fr===fr&&m.fc===fc&&m.tr===tr&&m.tc===tc){
+      if(promo){ return {...m,promo,special:null}; }
+      return m;
+    }
+  }
+  return lm[0]||null; // fallback
+}
+
+// --- Minimax fallback (kept for offline/error cases) ---
 const PVAL={P:100,N:320,B:330,R:500,Q:900,K:20000};
 const PST={
   P:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
-  N:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
+  N:[[-50,-40,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
   B:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
   R:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
   Q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],
   K:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]]
 };
-
 function evalBoard(board){
   let s=0;
   for(let r=0;r<8;r++) for(let c=0;c<8;c++){
@@ -588,7 +669,6 @@ function evalBoard(board){
   }
   return s;
 }
-
 function minimax(board,depth,alpha,beta,maximizing,ep,castling){
   const color=maximizing?'black':'white';
   const lm=getLegalMoves(board,color,ep,castling);
@@ -617,8 +697,7 @@ function minimax(board,depth,alpha,beta,maximizing,ep,castling){
     return best;
   }
 }
-
-function getAIMove(board,ep,castling,diff){
+function minimaxFallback(board,ep,castling,diff){
   const depths=[1,2,3,4];
   const depth=depths[diff]||2;
   const lm=getLegalMoves(board,'black',ep,castling);
@@ -632,6 +711,34 @@ function getAIMove(board,ep,castling,diff){
     if(v+noise>best){best=v+noise;bestMove=m;}
   }
   return bestMove;
+}
+
+// --- Main AI entry point (async via Stockfish) ---
+function requestStockfishMove(board, ep, castling, diff, callback){
+  if(!sfWorker || !sfReady){
+    // Stockfish not ready yet: use minimax fallback
+    const move = minimaxFallback(board, ep, castling, diff);
+    callback(move);
+    return;
+  }
+  const fen = boardToFEN(board, 'black', ep, castling);
+  const skill = SF_SKILL[diff] ?? 10;
+  const depth  = SF_DEPTH[diff]  ?? 8;
+  const time   = SF_TIME[diff]   ?? 500;
+
+  sfCallback = uci => {
+    if(!uci || uci==='(none)'){
+      callback(minimaxFallback(board, ep, castling, diff));
+      return;
+    }
+    const move = uciToMove(uci, board, ep, castling);
+    callback(move);
+  };
+
+  sfWorker.postMessage('ucinewgame');
+  sfWorker.postMessage(`setoption name Skill Level value ${skill}`);
+  sfWorker.postMessage(`position fen ${fen}`);
+  sfWorker.postMessage(`go depth ${depth} movetime ${time}`);
 }
 
 // ============================================================
@@ -784,14 +891,15 @@ function executeMove(move){
 }
 
 function doAIMove(){
-  const move=getAIMove(G.board,G.ep,G.castling,G.diff);
-  G.aiThinking=false;
-  if(!move) return;
-  const piece=G.board[move.fr][move.fc];
-  const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,move,G.ep,G.castling);
-  // AI always promotes to queen
-  if(move.special==='promo'){ nb[move.tr][move.tc]='bQ'; move.promo='Q'; }
-  animateMove(piece,move.fr,move.fc,move.tr,move.tc,()=>doExecute(move,piece,nb,captured,nep,nc));
+  requestStockfishMove(G.board, G.ep, G.castling, G.diff, move => {
+    G.aiThinking=false;
+    if(!move) return;
+    const piece=G.board[move.fr][move.fc];
+    const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,move,G.ep,G.castling);
+    // AI always promotes to queen
+    if(move.special==='promo'){ nb[move.tr][move.tc]='bQ'; move.promo='Q'; }
+    animateMove(piece,move.fr,move.fc,move.tr,move.tc,()=>doExecute(move,piece,nb,captured,nep,nc));
+  });
 }
 
 function selectPiece(r,c){
@@ -953,6 +1061,7 @@ document.querySelectorAll('.dpad-arm,.btn-action,.btn-pill').forEach(btn=>{
 // ============================================================
 //  INIT
 // ============================================================
+initStockfish();
 buildBoard();
 showDiffPanel();
 </script>
