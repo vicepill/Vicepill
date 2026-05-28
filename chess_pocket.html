@@ -223,7 +223,7 @@ body::after{
 }
 .result-btn:hover{background:var(--rpg-gold);color:#000;}
 
-/* ===== CHESS BOARD (same as original) ===== */
+/* ===== CHESS BOARD ===== */
 #statusBar{width:100%;display:flex;justify-content:space-between;align-items:center;padding:0 2px;}
 #statusText{font-size:7px;color:var(--accent);letter-spacing:1px;font-family:'Pixelify Sans',monospace;text-shadow:0 0 8px rgba(232,201,106,.5);min-width:80px;}
 #turnIndicator{font-size:7px;color:var(--text);letter-spacing:1px;}
@@ -271,7 +271,7 @@ body::after{
 .hud-buff{font-size:8px;animation:buffPulse .8s infinite alternate;}
 @keyframes buffPulse{from{opacity:.6}to{opacity:1}}
 
-/* ===== DIFF + OVERLAY (same style) ===== */
+/* ===== DIFF + OVERLAY ===== */
 #diffPanel{position:absolute;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#0d1008;gap:14px;}
 #diffPanel .diff-title{font-family:'Pixelify Sans',monospace;font-size:14px;color:var(--accent);letter-spacing:3px;text-shadow:0 0 15px rgba(232,201,106,.6);}
 .diff-subtitle{font-size:7px;color:var(--dim);letter-spacing:1px;margin-top:-8px;}
@@ -482,14 +482,29 @@ body::after{
 
 <script>
 // =====================================================
-//  AUDIO ENGINE
+//  AUDIO ENGINE (WITH BACKGROUND MUSIC FIX)
 // =====================================================
 let audioCtx;
+let bgMusic = null;
+
+function playBgMusic() {
+  if (!bgMusic) {
+    bgMusic = new Audio('idle.mp3');
+    bgMusic.loop = true;
+    bgMusic.volume = 0.35;
+  }
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => { /* Safe catch for pre-interaction blocks */ });
+  }
+}
+
 function getAudio(){
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
+  playBgMusic();
   return audioCtx;
 }
+
 function playSfx(freq,endFreq,type,dur,vol,delay){
   try{
     const ac=getAudio();delay=delay||0;
@@ -537,7 +552,7 @@ function sndIntro(){
 }
 
 // =====================================================
-//  CHESS ENGINE (full, same as original)
+//  CHESS ENGINE
 // =====================================================
 const GLYPHS={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 function col(p){return p?(p[0]==='w'?'white':'black'):null;}
@@ -612,7 +627,6 @@ function requestStockfishMove(board,ep,castling,diff,callback){if(!sfWorker||!sf
 // =====================================================
 //  RPG SYSTEM
 // =====================================================
-// Piece data
 const PIECE_BATTLE = {
   P: { name:'PAWN',      sprite:'♟', hp:30,  atk:8,  xp:20,  tier:'normal', color:'#aaaaaa' },
   N: { name:'KNIGHT',    sprite:'♞', hp:70,  atk:18, xp:60,  tier:'boss',   color:'#88bb88' },
@@ -622,7 +636,6 @@ const PIECE_BATTLE = {
   K: { name:'DARK KING', sprite:'♚', hp:250, atk:45, xp:300, tier:'ultima', color:'#ffdd00' }
 };
 
-// Player spells
 const SPELLS = [
   { id:'fire',    name:'FIRE',    icon:'🔥', mp:10, desc:'Single hit',       dmgMult:1.8, type:'dmg', sfx:'fire'    },
   { id:'blizzard',name:'BLIZZARD',icon:'❄️', mp:14, desc:'Ice + slow',       dmgMult:1.6, type:'dmg', sfx:'ice', slow:true },
@@ -636,7 +649,6 @@ const SPELLS = [
   { id:'regen',   name:'REGEN',   icon:'🌿', mp:20, desc:'Heal 8/turn',      type:'buff', buff:'regen',amount:8  },
 ];
 
-// Player items
 const ITEMS = [
   { id:'potion',  name:'POTION',    icon:'🧪', desc:'Heal 50 HP',      heal:50,   count:3 },
   { id:'hipotion',name:'HI-POTION', icon:'💊', desc:'Heal 120 HP',     heal:120,  count:1 },
@@ -646,13 +658,12 @@ const ITEMS = [
   { id:'phoenix', name:'PHOENIX',   icon:'🦅', desc:'Revive + 50%HP',  revive:true,count:1 },
 ];
 
-// RPG player state (persists across battles)
 let RPG = {
   hp: 100, maxHp: 100,
   mp: 60,  maxMp: 60,
   baseAtk: 20,
   xp: 0, level: 1,
-  buffs: {},   // atk, def, mdef, regen, slow(enemy)
+  buffs: {},
   items: ITEMS.map(i=>({...i})),
   spells: SPELLS,
   defeated: false
@@ -666,10 +677,8 @@ function rpgLevelUp(){
   RPG.mp = RPG.maxMp;
   RPG.baseAtk = Math.floor(RPG.baseAtk * 1.15);
 }
-
 function rpgXpNeeded(){return RPG.level * 100;}
 
-// Current battle state
 let BATTLE = {
   active: false,
   enemy: null,
@@ -680,12 +689,12 @@ let BATTLE = {
   pendingMove: null,
   onWin: null,
   onLose: null,
-  menuState: 'main', // main | magic | item
+  menuState: 'main',
   playerTurn: true
 };
 
 // =====================================================
-//  RPG BATTLE UI
+//  RPG BATTLE UI (WITH ACCURATE SPRITES FIX)
 // =====================================================
 function battleLog(html){
   const el=document.getElementById('battleLogText');
@@ -704,7 +713,7 @@ function updateBattleBars(){
   document.getElementById('heroMpVal').textContent=RPG.mp+'/'+RPG.maxMp;
   document.getElementById('enemyHpVal').textContent=BATTLE.enemyHp+'/'+BATTLE.enemyMaxHp;
   document.getElementById('enemyLbl').textContent=BATTLE.enemy?BATTLE.enemy.name.slice(0,5):'FOE';
-  // color bar by hp
+  
   const hpBar=document.getElementById('heroHpBar');
   if(hpPct>50) hpBar.style.background='linear-gradient(90deg,#e84a4a,#ff7070)';
   else if(hpPct>25) hpBar.style.background='linear-gradient(90deg,#e8a04a,#ffcc70)';
@@ -780,7 +789,6 @@ function setMenuDisabled(disabled){
   });
 }
 
-// Battle actions
 function battleAttack(){
   if(!BATTLE.playerTurn) return;
   sndHit();
@@ -816,7 +824,6 @@ function castSpell(id){
   setMenuDisabled(true);
   RPG.mp = Math.max(0, RPG.mp - spell.mp);
 
-  // SFX
   if(spell.sfx==='fire') sndMagicFire();
   else if(spell.sfx==='ice') sndMagicIce();
   else if(spell.sfx==='thunder') sndMagicThunder();
@@ -900,7 +907,7 @@ function battleDefend(){
   sndBuff();
   BATTLE.playerTurn=false;
   setMenuDisabled(true);
-  RPG.buffs._defend=true; // one-turn defend
+  RPG.buffs._defend=true;
   battleLog(`🛡 <span class="log-gold">Defending! Damage reduced by 50%!</span>`);
   buildMainMenu();
   setTimeout(()=>enemyTurn(),600);
@@ -916,19 +923,16 @@ function enemyTurn(){
   enemyEl.classList.remove('atk');void enemyEl.offsetWidth;enemyEl.classList.add('atk');
   setTimeout(()=>enemyEl.classList.remove('atk'),400);
 
-  // Regen tick
   if(RPG.buffs.regen){
     RPG.hp=Math.min(RPG.maxHp, RPG.hp+RPG.buffs.regen);
     updateBattleBars();
   }
 
-  // Enemy attacks
   let atkDelay = BATTLE.enemySlowed ? 600 : 0;
   setTimeout(()=>{
     let dmg = Math.floor(en.atk * (0.8+Math.random()*0.4));
     if(RPG.buffs.def) dmg = Math.floor(dmg*(1-RPG.buffs.def));
     if(RPG.buffs._defend) dmg = Math.floor(dmg*0.5);
-    // Bosses have a special attack
     let special='';
     if((en.tier==='boss'||en.tier==='ultima') && Math.random()<0.25){
       dmg = Math.floor(dmg*1.8);
@@ -942,7 +946,7 @@ function enemyTurn(){
 
     showDamage(heroEl, '-'+dmg, '#ff6666');
     RPG.hp = Math.max(0, RPG.hp - dmg);
-    battleLog(`${en.sprite} <span class="log-dmg">${en.name} attacks for ${dmg}!</span>${special}`);
+    battleLog(`${GLYPHS[BATTLE.enemyPiece] || en.sprite} <span class="log-dmg">${en.name} attacks for ${dmg}!</span>${special}`);
     updateBattleBars();
 
     if(RPG.hp<=0){
@@ -984,7 +988,6 @@ function endBattle(won){
       rpgLevelUp();
       xpMsg += ` | LEVEL UP! → Lv.${RPG.level}`;
     }
-    // Reset enemy buffs
     BATTLE.enemySlowed=false;
     xpEl.innerHTML=`<span class="log-gold">${xpMsg}</span>`;
     document.getElementById('resultBtn').textContent='CONTINUE ▶';
@@ -1003,7 +1006,6 @@ function endBattle(won){
     document.getElementById('resultBtn').onclick=()=>{
       resEl.classList.remove('show');
       hideBattle();
-      // Restore minimal HP
       RPG.hp=Math.floor(RPG.maxHp*0.3);
       RPG.defeated=false;
       if(BATTLE.onLose) BATTLE.onLose();
@@ -1017,14 +1019,15 @@ function hideBattle(){
   updateRpgHud();
 }
 
-function startBattle(piece, onWin, onLose){
-  const ptype=typ(piece);
+function startBattle(playerPiece, enemyPiece, onWin, onLose){
+  const ptype=typ(enemyPiece);
   const data = PIECE_BATTLE[ptype] || PIECE_BATTLE.P;
   const diffMult = [0.7,1.0,1.4,1.8][G.diff] || 1.0;
   const levelBonus = 1 + (RPG.level-1)*0.1;
 
   BATTLE.active=true;
   BATTLE.enemy={...data};
+  BATTLE.enemyPiece = enemyPiece;
   BATTLE.enemy.atk=Math.floor(data.atk*diffMult*levelBonus);
   BATTLE.enemyMaxHp=Math.floor(data.hp*diffMult*levelBonus);
   BATTLE.enemyHp=BATTLE.enemyMaxHp;
@@ -1033,15 +1036,15 @@ function startBattle(piece, onWin, onLose){
   BATTLE.onLose=onLose;
   BATTLE.enemySlowed=false;
 
-  document.getElementById('enemySprite').textContent=data.sprite;
+  document.getElementById('enemySprite').textContent=GLYPHS[enemyPiece] || data.sprite;
   document.getElementById('enemySprite').style.filter=`drop-shadow(0 0 8px ${data.color})`;
+  document.getElementById('heroSprite').textContent=GLYPHS[playerPiece] || '♟';
   document.getElementById('enemyLbl').textContent=data.name.slice(0,5);
   updateBattleBars();
   spawnParticles();
   buildMainMenu();
   setMenuDisabled(false);
 
-  // Play appropriate music SFX
   if(data.tier==='ultima') sndUltimaStart();
   else if(data.tier==='boss') sndBossStart();
   else sndBattleStart();
@@ -1056,10 +1059,9 @@ function startBattle(piece, onWin, onLose){
     : `A ${data.name} blocks your path!`;
   document.getElementById('battleResult').classList.remove('show');
   battleLog(log);
-  BATTLE.capturedPiece=piece;
+  BATTLE.capturedPiece=enemyPiece;
 }
 
-// Update HUD buffs display
 function updateHudBuffs(){
   const el=document.getElementById('hudBuffs');
   if(!el) return;
@@ -1097,7 +1099,6 @@ function newGame(diff, mode){
     gameMode: mode||'normal'
   };
   if(mode==='rpg'){
-    // Reset player for new game but keep level
     RPG.hp=RPG.maxHp; RPG.mp=RPG.maxMp;
     RPG.buffs={};
     document.getElementById('rpgHud').classList.add('show');
@@ -1159,7 +1160,7 @@ function animateMove(piece,fr,fc,tr,tc,cb){
 function shakeBoard(){boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),300);}
 
 // =====================================================
-//  MOVE LOGIC
+//  MOVE LOGIC (WITH FULL DEFENSIVE/OFFENSIVE BATTLE FIX)
 // =====================================================
 function toNotation(move,piece,inCheck,isMate){
   const f='abcdefgh',ra='87654321',t=typ(piece);
@@ -1171,40 +1172,80 @@ function toNotation(move,piece,inCheck,isMate){
 }
 
 function doExecute(move,piece,nb,captured,nep,nc){
-  // RPG mode: if white captures something, trigger battle
-  if(captured && G.gameMode==='rpg' && col(captured)==='black'){
-    // Show board state first
+  if(captured && G.gameMode==='rpg'){
+    let playerPiece, enemyPiece;
+    if(col(piece)==='white'){
+      playerPiece = piece;
+      enemyPiece = captured;
+    } else {
+      playerPiece = captured;
+      enemyPiece = piece;
+    }
+
     G.board=nb; G.ep=nep; G.castling=nc;
     G.lastMove=move; G.selected=null; G.validMoves=[];
     renderBoard();
-    // Trigger battle
-    startBattle(captured,
-      ()=>{
-        // WIN battle: capture proceeds normally
-        if(col(captured)==='white') G.capByBlack.push(captured);
-        else G.capByWhite.push(captured);
-        sndCapture();shakeBoard();
-        finishTurn(move,piece,nb,captured,nep,nc);
+
+    startBattle(playerPiece, enemyPiece,
+      () => {
+        // PLAYER WINS BATTLE
+        if(col(piece)==='white'){
+          // Offensive victory
+          G.capByWhite.push(captured);
+          sndCapture(); shakeBoard();
+          finishTurn(move,piece,nb,captured,nep,nc);
+        } else {
+          // Defensive victory (Player blocks enemy attack)
+          G.capByWhite.push(piece); 
+          let defendBoard = nb.map(row=>[...row]);
+          defendBoard[move.fr][move.fc] = null;
+          defendBoard[move.tr][move.tc] = captured;
+          G.board = defendBoard;
+          sndCapture(); shakeBoard();
+          G.turn = 'white';
+          G.moveHistory.push(toNotation(move,piece,false,false) + "(Defended)");
+          
+          const lm=getLegalMoves(G.board,'white',G.ep,G.castling);
+          const inCheck=isInCheck(G.board,'white',G.ep,G.castling);
+          renderBoard();
+          if(lm.length===0){
+            G.gameOver=true;
+            if(inCheck) setTimeout(()=>showOverlay('YOU LOSE','Checkmate!'),400);
+            else setTimeout(()=>showOverlay('STALEMATE','Draw!'),400);
+          }
+        }
         updateRpgHud();
       },
-      ()=>{
-        // LOSE battle: piece stays (undo capture by reverting board)
-        G.board=nb; // keep position but undo capture
-        G.board[move.tr][move.tc]=captured; // restore captured piece
-        G.board[move.fr][move.fc]=null; // piece moved anyway
-        G.turn=opp(G.turn); // switch turn
-        renderBoard();
+      () => {
+        // PLAYER LOSES BATTLE
+        if(col(piece)==='white'){
+          // Offensive failure (Player piece shatters)
+          let failBoard = nb.map(row=>[...row]);
+          failBoard[move.tr][move.tc] = captured;
+          failBoard[move.fr][move.fc] = null;
+          G.board = failBoard;
+          G.capByBlack.push(piece);
+          G.turn = 'black';
+          G.moveHistory.push(toNotation(move,piece,false,false) + "(Failed)");
+          renderBoard();
+          updateRpgHud();
+          if(G.turn==='black'){G.aiThinking=true;renderBoard();setTimeout(doAIMove,350);}
+        } else {
+          // Defensive failure (Enemy successfully breaches and captures)
+          G.capByBlack.push(captured);
+          sndCapture(); shakeBoard();
+          finishTurn(move,piece,nb,captured,nep,nc);
+        }
         updateRpgHud();
-        if(G.turn==='black'){G.aiThinking=true;renderBoard();setTimeout(doAIMove,350);}
       }
     );
     return;
   }
-  // Normal capture / move
+
   if(captured){
     if(col(captured)==='white') G.capByBlack.push(captured);
     else G.capByWhite.push(captured);
-    sndCapture();shakeBoard();
+    sndCapture(); shakeBoard();
   } else if(move.special==='castle-k'||move.special==='castle-q'){
     sndCastle();
   } else {
@@ -1315,7 +1356,7 @@ document.getElementById('overlayBtn').onclick=()=>{
 // =====================================================
 //  MODE SELECT
 // =====================================================
-let modeCursor=0; // 0=normal, 1=rpg
+let modeCursor=0;
 const modeDescs=['Classic chess vs AI with Stockfish engine','⚔ Battle pieces in Final Fantasy-style RPG combat!'];
 
 function showModePanel(){
@@ -1411,7 +1452,7 @@ document.getElementById('diffOptions').addEventListener('click',e=>{
 });
 
 // =====================================================
-//  INPUT ROUTING
+//  INPUT ROUTING (SAFE AUDIO TRIGGER HANDLERS)
 // =====================================================
 const diffPanelEl=()=>document.getElementById('diffPanel');
 const modePanelEl=()=>document.getElementById('modePanel');
@@ -1420,18 +1461,19 @@ function isOnDiffScreen(){return diffPanelEl().style.display!=='none';}
 function isOnModeScreen(){return modePanelEl().style.display!=='none';}
 function isOnIntro(){return rpgIntroEl().classList.contains('show');}
 
-document.getElementById('btn-up').onclick    =()=>{if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(-1,0);};
-document.getElementById('btn-down').onclick  =()=>{if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(1,0);};
-document.getElementById('btn-left').onclick  =()=>{if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(0,-1);};
-document.getElementById('btn-right').onclick =()=>{if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(0,1);};
-document.getElementById('btn-a').onclick     =()=>{if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
-document.getElementById('btn-x').onclick     =()=>{if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
-document.getElementById('btn-b').onclick     =()=>{if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
-document.getElementById('btn-y').onclick     =()=>{if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
-document.getElementById('btn-start').onclick =()=>{if(!BATTLE.active)showModePanel();};
-document.getElementById('btn-select').onclick=()=>{if(!BATTLE.active)showModePanel();};
+document.getElementById('btn-up').onclick    =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(-1,0);};
+document.getElementById('btn-down').onclick  =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(1,0);};
+document.getElementById('btn-left').onclick  =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(0,-1);};
+document.getElementById('btn-right').onclick =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(0,1);};
+document.getElementById('btn-a').onclick     =()=>{playBgMusic(); if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
+document.getElementById('btn-x').onclick     =()=>{playBgMusic(); if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
+document.getElementById('btn-b').onclick     =()=>{playBgMusic(); if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
+document.getElementById('btn-y').onclick     =()=>{playBgMusic(); if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
+document.getElementById('btn-start').onclick =()=>{playBgMusic(); if(!BATTLE.active)showModePanel();};
+document.getElementById('btn-select').onclick=()=>{playBgMusic(); if(!BATTLE.active)showModePanel();};
 
 document.addEventListener('keydown',e=>{
+  playBgMusic();
   if(isOnIntro()) return;
   if(isOnDiffScreen()){
     if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();diffNav(-1);}
