@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -354,7 +355,6 @@ body::after{
   <div class="screen-bezel">
     <div id="gameScreen">
 
-      <!-- MODE SELECT -->
       <div id="modePanel">
         <div class="mode-title">♟ POCKET<br>CHESS RPG</div>
         <div class="mode-options" id="modeOptions">
@@ -365,14 +365,12 @@ body::after{
         <div class="mode-hint">↑↓ SELECT  •  A CONFIRM</div>
       </div>
 
-      <!-- RPG INTRO -->
       <div id="rpgIntro">
         <div class="intro-stars" id="introStars"></div>
         <div class="intro-hero" id="introHero">♟</div>
         <div id="introLines"></div>
       </div>
 
-      <!-- RPG BATTLE SCREEN -->
       <div id="rpgBattle">
         <div class="battle-scene" id="battleScene">
           <div class="battle-chess-bg" id="chessBg"></div>
@@ -413,7 +411,6 @@ body::after{
         </div>
       </div>
 
-      <!-- CHESS BOARD UI -->
       <div id="statusBar">
         <div id="statusText">YOUR TURN</div>
         <div id="turnIndicator">♔ WHITE</div>
@@ -461,7 +458,6 @@ body::after{
       <div class="captured-row" id="capturedByWhite"></div>
       <div id="moveLog"></div>
 
-      <!-- DIFF SELECT -->
       <div id="diffPanel" style="display:none;">
         <div class="diff-title">⚔ CHESS</div>
         <div class="diff-subtitle">SELECT DIFFICULTY</div>
@@ -476,7 +472,6 @@ body::after{
     </div>
   </div>
 
-  <!-- Controls -->
   <div class="controls-section">
     <div class="select-start-row">
       <div class="btn-pill" id="btn-select">SELECT</div>
@@ -723,21 +718,45 @@ function isAttacked(board,r,c,byColor,castling){
   for(let rr=0;rr<8;rr++)for(let cc=0;cc<8;cc++){const p=board[rr][cc];if(!p||col(p)!==byColor)continue;const ms=getMoves(board,rr,cc,null,noCastle);if(ms.some(m=>m.tr===r&&m.tc===c))return true;}return false;
 }
 function findKing(board,color){const target=color==='white'?'wK':'bK';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===target)return[r,c];return null;}
-function applyMove(board,move,ep,castling){
+
+// MODIFIED: applyMove now handles G.hpBoard mapping persistence during moves!
+function applyMove(board,move,ep,castling, hpBoard){
   const nb=board.map(row=>[...row]);
   const{fr,fc,tr,tc,special,promo}=move;
   const piece=nb[fr][fc];let captured=nb[tr][tc];
   nb[tr][tc]=piece;nb[fr][fc]=null;
+  
+  let nhp = hpBoard ? hpBoard.map(row=>[...row]) : null;
+  if(nhp){
+    const hpPiece = nhp[fr][fc];
+    nhp[tr][tc] = hpPiece;
+    nhp[fr][fc] = null;
+  }
+
   const newCastling={white:{...castling.white},black:{...castling.black}};let newEp=null;
   if(special==='double'){const epRow=col(piece)==='white'?tr+1:tr-1;newEp=[epRow,tc];}
-  if(special==='enpassant'){const capRow=col(piece)==='white'?tr+1:tr-1;captured=nb[capRow][tc];nb[capRow][tc]=null;}
-  if(special==='castle-k'){nb[tr][tc-1]=nb[tr][7];nb[tr][7]=null;}
-  if(special==='castle-q'){nb[tr][tc+1]=nb[tr][0];nb[tr][0]=null;}
-  if(promo)nb[tr][tc]=col(piece)[0]+promo;
+  if(special==='enpassant'){
+      const capRow=col(piece)==='white'?tr+1:tr-1;
+      captured=nb[capRow][tc];nb[capRow][tc]=null;
+      if(nhp) nhp[capRow][tc] = null;
+  }
+  if(special==='castle-k'){
+      nb[tr][tc-1]=nb[tr][7];nb[tr][7]=null;
+      if(nhp) { nhp[tr][tc-1]=nhp[tr][7]; nhp[tr][7]=null; }
+  }
+  if(special==='castle-q'){
+      nb[tr][tc+1]=nb[tr][0];nb[tr][0]=null;
+      if(nhp) { nhp[tr][tc+1]=nhp[tr][0]; nhp[tr][0]=null; }
+  }
+  if(promo){
+      nb[tr][tc]=col(piece)[0]+promo;
+      if(nhp) nhp[tr][tc] = null;
+  }
   if(typ(piece)==='K')newCastling[col(piece)]={kside:false,qside:false};
   if(typ(piece)==='R'){const pc=col(piece);if(fc===7)newCastling[pc].kside=false;if(fc===0)newCastling[pc].qside=false;}
   if(captured&&typ(captured)==='R'){const pc=col(captured);if(tc===7)newCastling[pc].kside=false;if(tc===0)newCastling[pc].qside=false;}
-  return{board:nb,captured,ep:newEp,castling:newCastling};
+  
+  return{board:nb,captured,ep:newEp,castling:newCastling,hpBoard:nhp};
 }
 function getLegalMoves(board,color,ep,castling){
   const all=[],noCastle={white:{kside:false,qside:false},black:{kside:false,qside:false}};
@@ -786,27 +805,33 @@ const ALL_SPELLS={
   taunt:   {id:'taunt',  name:'TAUNT',     icon:'👊', mp:10, desc:'Force enemy miss', type:'buff', buff:'evade',amount:1,     sfx:'buff',      mpLabel:'GRIT' },
   // KNIGHT spells — Wind/Thunder theme
   galeforce:{id:'galeforce',name:'GALE',    icon:'🌪', mp:14, desc:'Wind multi-hit',  dmgMult:1.5, type:'dmg', sfx:'wind',    fxType:'wind',   mpLabel:'FURY' },
-  bolt:    {id:'bolt',   name:'BOLT',      icon:'⚡', mp:18, desc:'Thunder strike',   dmgMult:2.2, type:'dmg', sfx:'thunder', fxType:'thunder',mpLabel:'FURY' },
+  bolt:    {id:'bolt',   name:'BOLT',   
+    icon:'⚡', mp:18, desc:'Thunder strike',   dmgMult:2.2, type:'dmg', sfx:'thunder', fxType:'thunder',mpLabel:'FURY' },
   charge:  {id:'charge', name:'CHARGE',    icon:'🐎', mp:12, desc:'+40% ATK next hit',type:'buff', buff:'atk', amount:0.4,   sfx:'buff',      mpLabel:'FURY' },
   windwall:{id:'windwall',name:'WINDWALL', icon:'💨', mp:16, desc:'Dodge next attack',type:'buff', buff:'evade',amount:1,    sfx:'buff',      mpLabel:'FURY' },
   // BISHOP spells — Holy/Fire theme
   fireball:{id:'fireball',name:'FIREBALL', icon:'🔥', mp:12, desc:'Burst fire dmg',   dmgMult:2.0, type:'dmg', sfx:'fire',   fxType:'fire',   mpLabel:'FAITH'},
-  holy:    {id:'holy',   name:'HOLY',      icon:'✨', mp:22, desc:'Holy radiance',    dmgMult:2.6, type:'dmg', sfx:'holy',   fxType:'holy', bonus:'ultima',  mpLabel:'FAITH'},
+  holy:    {id:'holy',   name:'HOLY',      icon:'✨', mp:22, 
+desc:'Holy radiance',    dmgMult:2.6, type:'dmg', sfx:'holy',   fxType:'holy', bonus:'ultima',  mpLabel:'FAITH'},
   cure:    {id:'cure',   name:'CURE',      icon:'💚', mp:10, desc:'Heal 35 HP',       heal:35,     type:'heal', sfx:'heal',  fxType:'heal',   mpLabel:'FAITH'},
   cura:    {id:'cura',   name:'CURA',      icon:'💗', mp:18, desc:'Heal 80 HP',       heal:80,     type:'heal', sfx:'heal',  fxType:'heal',   mpLabel:'FAITH'},
-  regen:   {id:'regen',  name:'REGEN',     icon:'🌿', mp:16, desc:'Regen 10HP/turn',  type:'buff', buff:'regen',amount:10,   sfx:'buff',      mpLabel:'FAITH'},
+  regen:   {id:'regen',  name:'REGEN',     icon:'🌿', 
+mp:16, desc:'Regen 10HP/turn',  type:'buff', buff:'regen',amount:10,   sfx:'buff',      mpLabel:'FAITH'},
   // ROOK spells — Earth/Armor theme
   quake:   {id:'quake',  name:'QUAKE',     icon:'🌋', mp:16, desc:'Earth shatter',    dmgMult:2.0, type:'dmg', sfx:'earth',  fxType:'earth',  mpLabel:'IRON' },
   ironwall:{id:'ironwall',name:'IRONWALL', icon:'🏰', mp:14, desc:'-40% phys dmg',    type:'buff', buff:'def',  amount:0.4,  sfx:'shield',    mpLabel:'IRON' },
   shellwall:{id:'shellwall',name:'SHELLWALL',icon:'🔮',mp:14,desc:'-40% mag dmg',     type:'buff', buff:'mdef', amount:0.4,  sfx:'shield',    mpLabel:'IRON' },
-  counter: {id:'counter',name:'COUNTER',   icon:'⚙️', mp:20, desc:'Reflect 30% dmg',  type:'buff', buff:'counter',amount:0.3,sfx:'buff',     mpLabel:'IRON' },
+  counter: {id:'counter',name:'COUNTER',   icon:'⚙️', mp:20, desc:'Reflect 30% dmg',  type:'buff', buff:'counter',amount:0.3,sfx:'buff', 
+    mpLabel:'IRON' },
   // QUEEN spells — Dark/Arcane/All theme
   blizzara:{id:'blizzara',name:'BLIZZARA', icon:'❄️', mp:16, desc:'Ice barrage + slow',dmgMult:1.8, type:'dmg', sfx:'ice',   fxType:'ice',  slow:true,  mpLabel:'MANA' },
   thundara:{id:'thundara',name:'THUNDARA', icon:'⚡', mp:22, desc:'Triple lightning',  dmgMult:2.8, type:'dmg', sfx:'thunder',fxType:'thunder',          mpLabel:'MANA' },
   flare:   {id:'flare',  name:'FLARE',     icon:'💥', mp:30, desc:'Non-elem nuke',    dmgMult:3.5, type:'dmg', sfx:'arcane', fxType:'arcane',            mpLabel:'MANA' },
-  drain:   {id:'drain',  name:'DRAIN',     icon:'🩸', mp:14, desc:'Drain HP from foe',type:'drain',sfx:'drain', fxType:'shadow',                          mpLabel:'MANA' },
+  drain:   {id:'drain',  name:'DRAIN',     icon:'🩸', mp:14, 
+desc:'Drain HP from foe',type:'drain',sfx:'drain', fxType:'shadow',                          mpLabel:'MANA' },
   osmose:  {id:'osmose', name:'OSMOSE',    icon:'🔵', mp:0,  desc:'Drain MP from foe',type:'osmose',sfx:'drain', fxType:'arcane',                         mpLabel:'MANA' },
-  haste:   {id:'haste',  name:'HASTE',     icon:'💨', mp:18, desc:'+35% ATK, no slow',type:'buff', buff:'atk',  amount:0.35, sfx:'buff',                   mpLabel:'MANA' },
+  haste:   {id:'haste',  name:'HASTE',     icon:'💨', mp:18, desc:'+35% ATK, no slow',type:'buff', buff:'atk',  amount:0.35, sfx:'buff',      
+             mpLabel:'MANA' },
   // KING spells — Dark/Ancient/Ultimate theme
   darkflame:{id:'darkflame',name:'DARKFLAME',icon:'🌑',mp:20,desc:'Shadow fire blast', dmgMult:2.4, type:'dmg', sfx:'shadow',fxType:'dark',               mpLabel:'SOUL' },
   umbra:   {id:'umbra',  name:'UMBRA',     icon:'🌘', mp:28, desc:'Dark void strike',  dmgMult:3.2, type:'dmg', sfx:'shadow',fxType:'shadow',              mpLabel:'SOUL' },
@@ -832,7 +857,7 @@ const PIECE_PROFILES={
       {id:'warFlag',    name:'WAR FLAG',  icon:'🚩',desc:'+50% ATK 1 hit',  buff:'atk', amount:0.5,count:1},
     ],
     battleDesc:'A courageous pawn pushes forward!'
-  },
+},
   N:{
     hp:95, maxHp:95,           // Knight: mobile, balanced, fury resource
     mp:55, maxMp:55,
@@ -846,7 +871,7 @@ const PIECE_PROFILES={
       {id:'knightMedal',name:'MEDAL',     icon:'🏅',desc:'Revive + 50%HP', revive:true, count:1},
     ],
     battleDesc:'The knight charges with wild fury!'
-  },
+},
   B:{
     hp:75, maxHp:75,           // Bishop: frail but great healing & holy
     mp:80, maxMp:80,
@@ -857,10 +882,11 @@ const PIECE_PROFILES={
       {id:'holyWater',  name:'HOLY WATER',icon:'💧',desc:'Heal 50 HP',    heal:50,    count:3},
       {id:'incense',    name:'INCENSE',   icon:'🌸',desc:'Regen 15HP/turn',buff:'regen',amount:15,count:2},
       {id:'sanctified', name:'SANCTIFIED',icon:'✨',desc:'+FAITH +40',     restoreMp:40,count:2},
-      {id:'miracleSeal',name:'MIRACLE',   icon:'🔱',desc:'Full HP restore', fullHeal:true,count:1},
+      {id:'miracleSeal',name:'MIRACLE',  
+  icon:'🔱',desc:'Full HP restore', fullHeal:true,count:1},
     ],
     battleDesc:'The bishop channels divine power!'
-  },
+},
   R:{
     hp:130, maxHp:130,          // Rook: high HP, iron/armor resource
     mp:45, maxMp:45,
@@ -874,7 +900,7 @@ const PIECE_PROFILES={
       {id:'fortressOrb',name:'FORTRESS',  icon:'🏰',desc:'Counter + regen', combo:true, count:1},
     ],
     battleDesc:'The rook stands like an iron fortress!'
-  },
+},
   Q:{
     hp:110, maxHp:110,          // Queen: versatile, mana resource
     mp:100, maxMp:100,
@@ -888,7 +914,7 @@ const PIECE_PROFILES={
       {id:'turboCrystal',name:'TURBO CRY',icon:'💎',desc:'+60% ATK 2 hits',buff:'atk',amount:0.6,count:1},
     ],
     battleDesc:'The queen unleashes arcane supremacy!'
-  },
+},
   K:{
     hp:160, maxHp:160,          // King: tanky, soul resource (limited but powerful)
     mp:70,  maxMp:70,
@@ -1068,7 +1094,7 @@ function battleAttack(){
   const crit=Math.random()<0.10;
   const atkBuffMult=crit?2.0:(1+(RPG.buffs.atk||0));
   let dmg=calcPlayerDmg(RPG.baseAtk,BATTLE.enemy.tier,atkBuffMult,false);
-  // Taunt/evade: if buffed, reset after one action
+// Taunt/evade: if buffed, reset after one action
   setTimeout(()=>{
     enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
     setTimeout(()=>enemyEl.classList.remove('hurt'),400);
@@ -1114,8 +1140,7 @@ function castSpell(id){
       delete RPG.buffs.atk;
       setTimeout(()=>checkBattleEnd(()=>enemyTurn()),800);
     },320);
-
-  } else if(spell.type==='heal'){
+} else if(spell.type==='heal'){
     const healed=Math.min(spell.heal,RPG.maxHp-RPG.hp);
     RPG.hp=Math.min(RPG.maxHp,RPG.hp+spell.heal);
     showMagicEffect(heroEl,'heal');
@@ -1123,8 +1148,7 @@ function castSpell(id){
     battleLog(`${spell.icon} <span class="log-heal">${spell.name}: healed ${healed} HP!</span>`);
     updateBattleBars();
     setTimeout(()=>enemyTurn(),700);
-
-  } else if(spell.type==='kingHeal'){
+} else if(spell.type==='kingHeal'){
     // lifeforce: heal 100 + grant regen + clear all debuffs
     const healed=Math.min(100,RPG.maxHp-RPG.hp);
     RPG.hp=Math.min(RPG.maxHp,RPG.hp+100);
@@ -1133,8 +1157,7 @@ function castSpell(id){
     battleLog(`${spell.icon} <span class="log-gold">LIFEFORCE: +${healed} HP + Regen 12!</span>`);
     updateBattleBars();updateHudBuffs();
     setTimeout(()=>enemyTurn(),700);
-
-  } else if(spell.type==='drain'){
+} else if(spell.type==='drain'){
     const drainAmt=calcPlayerDmg(RPG.baseAtk,BATTLE.enemy.tier,1.3,true);
     const healed=Math.min(Math.floor(drainAmt*0.6),RPG.maxHp-RPG.hp);
     BATTLE.enemyHp=Math.max(0,BATTLE.enemyHp-drainAmt);
@@ -1179,32 +1202,32 @@ function useItem(id){
     RPG.hp=Math.min(RPG.maxHp,RPG.hp+item.heal);
     showMagicEffect(heroEl,'heal');showDamage(heroEl,item.icon+' +'+healed,'#44ff88');
     battleLog(`${item.icon} <span class="log-heal">${item.name}: +${healed} HP!</span>`);
-  } else if(item.restoreMp){
+} else if(item.restoreMp){
     const restored=Math.min(item.restoreMp,RPG.maxMp-RPG.mp);
     RPG.mp=Math.min(RPG.maxMp,RPG.mp+item.restoreMp);
     showDamage(heroEl,item.icon+' +'+restored,'#70aeff');
     battleLog(`${item.icon} <span class="log-mp">${item.name}: +${restored} ${RPG.mpLabel}!</span>`);
-  } else if(item.fullHeal){
+} else if(item.fullHeal){
     RPG.hp=RPG.maxHp;showMagicEffect(heroEl,'holy');
     showDamage(heroEl,item.icon+' FULL','#ffffff');
     battleLog(`${item.icon} <span class="log-heal">${item.name}: Full HP!</span>`);
-  } else if(item.fullMp){
+} else if(item.fullMp){
     RPG.mp=RPG.maxMp;showMagicEffect(heroEl,'arcane');
     showDamage(heroEl,item.icon+' FULL','#70aeff');
     battleLog(`${item.icon} <span class="log-mp">${item.name}: Full ${RPG.mpLabel}!</span>`);
-  } else if(item.elixir){
+} else if(item.elixir){
     RPG.hp=RPG.maxHp;RPG.mp=RPG.maxMp;
     showMagicEffect(heroEl,'holy');
     battleLog(`${item.icon} <span class="log-gold">ELIXIR: Full HP & ${RPG.mpLabel}!</span>`);
-  } else if(item.revive){
+} else if(item.revive){
     RPG.hp=Math.floor(RPG.maxHp*0.5);RPG.defeated=false;
     showMagicEffect(heroEl,'heal');
     battleLog(`${item.icon} <span class="log-gold">${item.name}! Revived at ${RPG.hp}HP!</span>`);
-  } else if(item.godmode){
+} else if(item.godmode){
     BATTLE.godmodeTurns=1;
     showShieldEffect();
     battleLog(`${item.icon} <span class="log-gold">${item.name}: Invincible next turn!</span>`);
-  } else if(item.combo){
+} else if(item.combo){
     // Fortress Orb: apply counter + regen at once
     RPG.buffs.counter=0.3;RPG.buffs.regen=8;
     showShieldEffect();
@@ -1213,7 +1236,7 @@ function useItem(id){
     RPG.buffs[item.buff]=item.amount;
     if(item.buff==='def')showShieldEffect();
     battleLog(`${item.icon} <span class="log-gold">${item.name} activated!</span>`);
-  } else if(item.dmg){
+} else if(item.dmg){
     const grenadeDmg=Math.min(item.dmg,TIER_DMG_CAP[BATTLE.enemy.tier]||45);
     const enemyEl=document.getElementById('enemySprite');
     showMagicEffect(enemyEl,'fire');
@@ -1266,6 +1289,7 @@ function enemyTurn(){
     let special='';
     if(dmg>0&&(en.tier==='boss'||en.tier==='ultima')&&Math.random()<0.25){dmg=Math.floor(dmg*1.8);special=`<span class="log-boss"> [${en.tier==='ultima'?'ULTIMA':'SPECIAL'}!]</span>`;}
     delete RPG.buffs._defend;
+  
     // Counter
     if(RPG.buffs.counter&&dmg>0){
       const counterDmg=Math.floor(dmg*RPG.buffs.counter);
@@ -1323,7 +1347,8 @@ function hideBattle(){
   switchMusic('idle');updateRpgHud();
 }
 
-function startBattle(playerPiece,enemyPiece,onWin,onLose){
+// MODIFIED: Accepts persistent existing HP context variables
+function startBattle(playerPiece,enemyPiece,onWin,onLose, playerExistingHp, enemyExistingHp){
   const ptype=typ(playerPiece);
   const etype=typ(enemyPiece);
   const data=PIECE_BATTLE[etype]||PIECE_BATTLE.P;
@@ -1332,14 +1357,18 @@ function startBattle(playerPiece,enemyPiece,onWin,onLose){
 
   // Apply per-piece player profile
   applyPieceProfile(ptype);
-
+  
+  if (playerExistingHp !== undefined && playerExistingHp !== null) {
+      RPG.hp = playerExistingHp;
+  }
+  
   BATTLE.active=true;
   BATTLE.enemy={...data};
   BATTLE.enemyPiece=enemyPiece;
   BATTLE.enemy.atk=Math.floor(data.atk*diffMult*levelBonus);
   BATTLE.enemy.def=data.def;
   BATTLE.enemyMaxHp=Math.floor(data.hp*diffMult*levelBonus);
-  BATTLE.enemyHp=BATTLE.enemyMaxHp;
+  BATTLE.enemyHp=(enemyExistingHp !== undefined && enemyExistingHp !== null) ? enemyExistingHp : BATTLE.enemyMaxHp;
   BATTLE.playerTurn=true;
   BATTLE.onWin=onWin;BATTLE.onLose=onLose;
   BATTLE.enemySlowed=false;BATTLE.godmodeTurns=0;
@@ -1362,7 +1391,8 @@ function startBattle(playerPiece,enemyPiece,onWin,onLose){
   const log=data.tier==='ultima'
     ?`<span class="log-boss">⚠ ${data.name} appears! ${prof.battleDesc}</span>`
     :data.tier==='boss'
-    ?`<span class="log-boss">⚔ ${data.name} challenges you! ${prof.battleDesc}</span>`
+    ?`<span class="log-boss">⚔ ${data.name} challenges you!
+${prof.battleDesc}</span>`
     :`${prof.battleDesc}`;
   document.getElementById('battleResult').classList.remove('show');
   battleLog(log);
@@ -1405,7 +1435,8 @@ function newGame(diff,mode){
     moveHistory:[],lastMove:null,
     gameOver:false,diff:diff,
     aiThinking:false,promoMove:null,
-    gameMode:mode||'normal'
+    gameMode:mode||'normal',
+    hpBoard:Array(8).fill(null).map(()=>Array(8).fill(null))
   };
   // Reset RPG to pawn default for the HUD; per-battle profiles are applied at battle start
   RPG.level=RPG.level||1;RPG.xp=RPG.xp||0;
@@ -1481,23 +1512,53 @@ function toNotation(move,piece,inCheck,isMate){
   return sym+cap+f[move.tc]+ra[move.tr]+(move.promo?'='+move.promo:'')+(isMate?'#':inCheck?'+':'');
 }
 
-function doExecute(move,piece,nb,captured,nep,nc){
+// MODIFIED: doExecute manages persistent G.hpBoard updates with battles!
+function doExecute(move,piece,nb,captured,nep,nc,nhp){
   if(captured&&G.gameMode==='rpg'){
     let playerPiece,enemyPiece;
-    if(col(piece)==='white'){playerPiece=piece;enemyPiece=captured;}
-    else{playerPiece=captured;enemyPiece=piece;}
-    G.board=nb;G.ep=nep;G.castling=nc;G.lastMove=move;G.selected=null;G.validMoves=[];renderBoard();
+    let playerExistingHp, enemyExistingHp;
+    let capRow = move.tr; let capCol = move.tc;
+    if(move.special==='enpassant'){
+        capRow = col(piece)==='white'? move.tr+1 : move.tr-1;
+    }
+
+    if(col(piece)==='white'){
+      playerPiece=piece; enemyPiece=captured;
+      playerExistingHp = G.hpBoard[move.fr][move.fc];
+      enemyExistingHp = G.hpBoard[capRow][capCol];
+    } else {
+      playerPiece=captured; enemyPiece=piece;
+      playerExistingHp = G.hpBoard[capRow][capCol];
+      enemyExistingHp = G.hpBoard[move.fr][move.fc];
+    }
+
+    G.board=nb;G.ep=nep;G.castling=nc;G.lastMove=move;G.selected=null;G.validMoves=[];
+    renderBoard();
+
     startBattle(playerPiece,enemyPiece,
       ()=>{
         if(col(piece)==='white'){
           G.capByWhite.push(captured);sndCapture();shakeBoard();
+          nhp[move.tr][move.tc] = RPG.hp;
+          G.hpBoard = nhp;
           finishTurn(move,piece,nb,captured,nep,nc);
         } else {
           G.capByWhite.push(piece);
           let defendBoard=nb.map(row=>[...row]);
-          defendBoard[move.fr][move.fc]=null;defendBoard[move.tr][move.tc]=captured;
-          G.board=defendBoard;sndCapture();shakeBoard();
+          defendBoard[move.tr][move.tc]=null;
+          defendBoard[move.fr][move.fc]=null;
+          defendBoard[capRow][capCol]=captured;
+          G.board=defendBoard;
+          
+          let defendHpBoard=nhp.map(row=>[...row]);
+          defendHpBoard[move.tr][move.tc]=null;
+          defendHpBoard[move.fr][move.fc]=null;
+          defendHpBoard[capRow][capCol]=RPG.hp;
+          G.hpBoard = defendHpBoard;
+
+          sndCapture();shakeBoard();
           G.turn='white';G.moveHistory.push(toNotation(move,piece,false,false)+'(Def)');
+     
           const lm=getLegalMoves(G.board,'white',G.ep,G.castling);
           const inCheck=isInCheck(G.board,'white',G.ep,G.castling);
           renderBoard();
@@ -1508,17 +1569,30 @@ function doExecute(move,piece,nb,captured,nep,nc){
       ()=>{
         if(col(piece)==='white'){
           let failBoard=nb.map(row=>[...row]);
-          failBoard[move.tr][move.tc]=captured;failBoard[move.fr][move.fc]=null;
-          G.board=failBoard;G.capByBlack.push(piece);
+          failBoard[move.tr][move.tc]=null;
+          failBoard[capRow][capCol]=captured; 
+          failBoard[move.fr][move.fc]=null;
+          G.board=failBoard;
+
+          let failHpBoard=nhp.map(row=>[...row]);
+          failHpBoard[move.tr][move.tc]=null;
+          failHpBoard[capRow][capCol]=BATTLE.enemyHp;
+          failHpBoard[move.fr][move.fc]=null;
+          G.hpBoard=failHpBoard;
+
+          G.capByBlack.push(piece);
           G.turn='black';G.moveHistory.push(toNotation(move,piece,false,false)+'(Fail)');
           renderBoard();updateRpgHud();
           if(G.turn==='black'){G.aiThinking=true;renderBoard();setTimeout(doAIMove,350);}
         } else {
           G.capByBlack.push(captured);sndCapture();shakeBoard();
+          nhp[move.tr][move.tc] = BATTLE.enemyHp;
+          G.hpBoard = nhp;
           finishTurn(move,piece,nb,captured,nep,nc);
         }
         updateRpgHud();
-      }
+      },
+      playerExistingHp, enemyExistingHp
     );
     return;
   }
@@ -1528,6 +1602,8 @@ function doExecute(move,piece,nb,captured,nep,nc){
     sndCapture();shakeBoard();
   } else if(move.special==='castle-k'||move.special==='castle-q'){sndCastle();}
   else{sndMove();}
+  
+  if (nhp) { G.hpBoard = nhp; }
   G.board=nb;G.ep=nep;G.castling=nc;G.lastMove=move;G.selected=null;G.validMoves=[];
   finishTurn(move,piece,nb,captured,nep,nc);
 }
@@ -1546,20 +1622,21 @@ function finishTurn(move,piece,nb,captured,nep,nc){
   if(G.turn==='black'){G.aiThinking=true;renderBoard();setTimeout(doAIMove,350);}
 }
 
+// MODIFIED: Forwarding G.hpBoard mappings to the standard move handlers
 function executeMove(move){
   const piece=G.board[move.fr][move.fc];
   if(move.special==='promo'){G.promoMove=move;showPromo(piece);return;}
-  const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,move,G.ep,G.castling);
-  doExecute(move,piece,nb,captured,nep,nc);
+  const{board:nb,captured,ep:nep,castling:nc, hpBoard:nhp}=applyMove(G.board,move,G.ep,G.castling, G.hpBoard);
+  doExecute(move,piece,nb,captured,nep,nc,nhp);
 }
 
 function doAIMove(){
   requestStockfishMove(G.board,G.ep,G.castling,G.diff,move=>{
     G.aiThinking=false;if(!move)return;
     const piece=G.board[move.fr][move.fc];
-    const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,move,G.ep,G.castling);
-    if(move.special==='promo'){nb[move.tr][move.tc]='bQ';move.promo='Q';}
-    animateMove(piece,move.fr,move.fc,move.tr,move.tc,()=>doExecute(move,piece,nb,captured,nep,nc));
+    const{board:nb,captured,ep:nep,castling:nc, hpBoard:nhp}=applyMove(G.board,move,G.ep,G.castling, G.hpBoard);
+    if(move.special==='promo'){nb[move.tr][move.tc]='bQ';move.promo='Q';if(nhp)nhp[move.tr][move.tc]=null;}
+    animateMove(piece,move.fr,move.fc,move.tr,move.tc,()=>doExecute(move,piece,nb,captured,nep,nc,nhp));
   });
 }
 
@@ -1603,9 +1680,10 @@ function showPromo(piece){
       document.getElementById('promoPanel').classList.remove('show');
       const move={...G.promoMove,promo:pt,special:null};
       const piece2=G.board[move.fr][move.fc];
-      const{board:nb,captured,ep:nep,castling:nc}=applyMove(G.board,G.promoMove,G.ep,G.castling);
+      const{board:nb,captured,ep:nep,castling:nc, hpBoard:nhp}=applyMove(G.board,G.promoMove,G.ep,G.castling, G.hpBoard);
       nb[move.tr][move.tc]=pc[0]+pt;
-      sndPromo();G.promoMove=null;doExecute(move,piece2,nb,captured,nep,nc);
+      if(nhp) nhp[move.tr][move.tc] = null;
+      sndPromo();G.promoMove=null;doExecute(move,piece2,nb,captured,nep,nc,nhp);
     };
     choicesEl.appendChild(btn);
   }
