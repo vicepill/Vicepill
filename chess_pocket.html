@@ -51,7 +51,7 @@ body::after{
   border:2px solid #1a1d24;box-shadow:inset 0 0 20px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.5);position:relative;
 }
 .screen-bezel::before{
-  content:'POCKET CHESS RPG v2.0';position:absolute;top:4px;left:50%;transform:translateX(-50%);
+  content:'POCKET CHESS RPG v2.1';position:absolute;top:4px;left:50%;transform:translateX(-50%);
   font-size:5px;color:#333;letter-spacing:1px;white-space:nowrap;font-family:'Share Tech Mono',monospace;
 }
 #gameScreen{
@@ -110,37 +110,87 @@ body::after{
 }
 #rpgBattle.show{display:flex;}
 
-/* ===== CHESSBOARD BATTLE SCENE ===== */
+/* ===== BATTLE SCENE with PERSPECTIVE CHESSBOARD ===== */
 .battle-scene{
   flex:1;position:relative;display:flex;align-items:flex-end;justify-content:space-between;
-  padding:6px 10px 0;min-height:120px;
+  padding:6px 14px 0;min-height:120px;
   overflow:hidden;
   border-bottom:2px solid #2a1a3a;
 }
 
-/* Chess pattern background */
+/* Perspective chessboard floor */
 .battle-chess-bg{
-  position:absolute;inset:0;z-index:0;
+  position:absolute;
+  left:50%;
+  bottom:-12px;
+  transform:translateX(-50%) perspective(160px) rotateX(52deg);
+  transform-origin:bottom center;
+  width:200px;
+  height:130px;
+  z-index:0;
   display:grid;
   grid-template-columns:repeat(8,12.5%);
-  grid-template-rows:repeat(5,20%);
-  opacity:0.22;
+  grid-template-rows:repeat(6,16.66%);
+  opacity:0.55;
   pointer-events:none;
+  border:1px solid rgba(200,184,130,0.18);
+  box-shadow:
+    0 0 30px rgba(80,40,160,0.4),
+    0 8px 24px rgba(0,0,0,0.7);
 }
 .chess-cell-l{background:#c8b882;}
-.chess-cell-d{background:#4a6741;}
+.chess-cell-d{background:#3a5632;}
 
-/* Gradient overlays on top of chess bg */
-.battle-scene-overlay{
-  position:absolute;inset:0;z-index:1;
-  background:
-    linear-gradient(180deg,rgba(8,3,24,0.75) 0%,rgba(20,8,40,0.5) 40%,rgba(26,15,10,0.3) 70%,rgba(42,26,8,0.15) 100%),
-    radial-gradient(ellipse at 50% 100%,rgba(100,50,200,.18) 0%,transparent 70%);
+/* Fade the far edge of the board */
+.battle-chess-fade{
+  position:absolute;
+  left:50%;
+  bottom:0px;
+  transform:translateX(-50%);
+  width:220px;
+  height:80px;
+  z-index:1;
+  pointer-events:none;
+  background:linear-gradient(
+    to bottom,
+    rgba(10,6,32,0.85) 0%,
+    rgba(10,6,32,0.5) 40%,
+    rgba(10,6,32,0.0) 100%
+  );
+}
+
+/* Side glow lines on board edges */
+.battle-chess-bg::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,
+    rgba(150,80,255,0.15) 0%,
+    transparent 20%,
+    transparent 80%,
+    rgba(150,80,255,0.15) 100%
+  );
   pointer-events:none;
 }
-.battle-scene-overlay::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,rgba(150,80,255,.4),transparent);
+
+/* Scene atmosphere gradient on top */
+.battle-scene-overlay{
+  position:absolute;inset:0;z-index:2;
+  background:
+    linear-gradient(180deg,rgba(8,3,24,0.70) 0%,rgba(20,8,40,0.35) 35%,rgba(10,5,20,0.0) 70%),
+    radial-gradient(ellipse at 50% 110%,rgba(120,60,220,.20) 0%,transparent 65%);
+  pointer-events:none;
+}
+
+/* Glowing horizon line */
+.battle-horizon{
+  position:absolute;
+  left:0;right:0;
+  bottom:32px;
+  height:1px;
+  z-index:3;
+  background:linear-gradient(90deg,transparent,rgba(160,80,255,0.45),rgba(100,180,255,0.35),rgba(160,80,255,0.45),transparent);
+  pointer-events:none;
 }
 
 .battle-particle{
@@ -422,11 +472,15 @@ body::after{
       <!-- RPG BATTLE SCREEN -->
       <div id="rpgBattle">
         <div class="battle-scene" id="battleScene">
-          <!-- Chessboard background grid -->
+          <!-- Perspective chessboard floor -->
           <div class="battle-chess-bg" id="chessBg"></div>
-          <!-- Gradient overlay -->
+          <!-- Far-edge fade -->
+          <div class="battle-chess-fade"></div>
+          <!-- Horizon glow line -->
+          <div class="battle-horizon"></div>
+          <!-- Atmosphere overlay -->
           <div class="battle-scene-overlay"></div>
-          <!-- Hero shield container -->
+          <!-- Hero container -->
           <div style="position:relative;z-index:4;align-self:flex-end;margin-bottom:8px;" id="heroContainer">
             <div class="hero-sprite" id="heroSprite">♟</div>
           </div>
@@ -557,11 +611,11 @@ body::after{
 
 <script>
 // =====================================================
-//  BUILD CHESS BG FOR BATTLE SCENE
+//  BUILD CHESS BG FOR BATTLE SCENE (6 rows x 8 cols)
 // =====================================================
 (function(){
   const bg = document.getElementById('chessBg');
-  for(let r=0;r<5;r++) for(let c=0;c<8;c++){
+  for(let r=0;r<6;r++) for(let c=0;c<8;c++){
     const cell=document.createElement('div');
     cell.className=(r+c)%2===0?'chess-cell-l':'chess-cell-d';
     bg.appendChild(cell);
@@ -569,7 +623,7 @@ body::after{
 })();
 
 // =====================================================
-//  AUDIO ENGINE — FIX: robust idle music triggering
+//  AUDIO ENGINE
 // =====================================================
 let audioCtx;
 let musicStarted = false;
@@ -586,14 +640,12 @@ Object.entries(music).forEach(([key, track]) => {
   if(track instanceof Audio) {
     track.loop = true;
     track.volume = 0.35;
-    // Preload
     track.load();
   }
 });
 
 function switchMusic(trackName) {
   if(music.current === trackName) return;
-
   const prev = music[music.current];
   if(prev && prev instanceof Audio && !prev.paused) {
     const fadeOut = setInterval(() => {
@@ -607,7 +659,6 @@ function switchMusic(trackName) {
       }
     }, 40);
   }
-
   music.current = trackName;
   const next = music[trackName];
   if(next && next instanceof Audio) {
@@ -624,10 +675,7 @@ function switchMusic(trackName) {
             clearInterval(fadeIn);
           }
         }, 40);
-      }).catch(()=>{
-        // Will retry on next user gesture
-        music.current = null;
-      });
+      }).catch(()=>{ music.current = null; });
     }
   }
 }
@@ -641,7 +689,6 @@ function battleMusicForTier(tier) {
 function getAudio(){
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
-  // FIX: always try to start idle if nothing is playing
   if(!music.current || (!BATTLE.active && music.current !== 'idle')) {
     switchMusic('idle');
   }
@@ -697,20 +744,17 @@ function sndIntro(){
 // =====================================================
 //  VISUAL EFFECTS
 // =====================================================
-
-// Chessboard tile highlight flicker on battle start
 function flashChessBg(){
   const cells = document.querySelectorAll('#chessBg > div');
   cells.forEach((cell,i)=>{
     setTimeout(()=>{
       cell.style.transition='opacity 0.08s';
-      cell.style.opacity='0.6';
+      cell.style.opacity='0.85';
       setTimeout(()=>{ cell.style.opacity=''; }, 120);
     }, i * 18);
   });
 }
 
-// Draw a slash SVG on target element
 function showSlashEffect(targetEl){
   const scene = document.getElementById('battleScene');
   const rect = targetEl.getBoundingClientRect();
@@ -725,7 +769,6 @@ function showSlashEffect(targetEl){
     top:${rect.top - sceneRect.top + rect.height/2 - 30}px;
     animation:slashAnim 0.45s forwards;`;
 
-  // Main slash line
   const line1 = document.createElementNS('http://www.w3.org/2000/svg','line');
   line1.setAttribute('x1','5'); line1.setAttribute('y1','10');
   line1.setAttribute('x2','55'); line1.setAttribute('y2','52');
@@ -733,7 +776,6 @@ function showSlashEffect(targetEl){
   line1.setAttribute('stroke-linecap','round');
   line1.setAttribute('opacity','0.95');
 
-  // Second slash (parallel)
   const line2 = document.createElementNS('http://www.w3.org/2000/svg','line');
   line2.setAttribute('x1','12'); line2.setAttribute('y1','5');
   line2.setAttribute('x2','58'); line2.setAttribute('y2','48');
@@ -741,7 +783,6 @@ function showSlashEffect(targetEl){
   line2.setAttribute('stroke-linecap','round');
   line2.setAttribute('opacity','0.7');
 
-  // Glow line
   const glow = document.createElementNS('http://www.w3.org/2000/svg','line');
   glow.setAttribute('x1','5'); glow.setAttribute('y1','10');
   glow.setAttribute('x2','55'); glow.setAttribute('y2','52');
@@ -756,7 +797,6 @@ function showSlashEffect(targetEl){
   setTimeout(()=>slash.remove(), 500);
 }
 
-// Spawn magic particles around a target element
 function showMagicEffect(targetEl, type){
   const scene = document.getElementById('battleScene');
   const rect = targetEl.getBoundingClientRect();
@@ -789,7 +829,6 @@ function showMagicEffect(targetEl, type){
     setTimeout(()=>p.remove(), dur + delay + 200);
   }
 
-  // Extra: thunder bolt line
   if(type==='thunder'){
     const bolt = document.createElementNS('http://www.w3.org/2000/svg','svg');
     bolt.setAttribute('width','80');bolt.setAttribute('height','80');
@@ -807,7 +846,6 @@ function showMagicEffect(targetEl, type){
     setTimeout(()=>bolt.remove(),600);
   }
 
-  // Holy: ring of stars
   if(type==='holy'){
     for(let i=0;i<8;i++){
       const star = document.createElement('div');
@@ -823,7 +861,6 @@ function showMagicEffect(targetEl, type){
     }
   }
 
-  // Heal: rising plus symbols
   if(type==='heal'){
     const symbols=['+','+','♥','✦','+'];
     symbols.forEach((sym,i)=>{
@@ -842,21 +879,16 @@ function showMagicEffect(targetEl, type){
   }
 }
 
-// Shield sprite on hero
 let shieldEl = null;
 let shieldTimeout = null;
 function showShieldEffect(){
   const heroContainer = document.getElementById('heroContainer');
-  // Remove existing shield
   if(shieldEl){ shieldEl.remove(); shieldEl=null; }
   if(shieldTimeout){ clearTimeout(shieldTimeout); }
-
   shieldEl = document.createElement('div');
   shieldEl.className = 'shield-aura';
   shieldEl.textContent = '🛡';
   heroContainer.appendChild(shieldEl);
-
-  // Shield stays until next enemy turn resolves (approx 1.4s)
   shieldTimeout = setTimeout(()=>{
     if(shieldEl){ shieldEl.classList.add('fading'); setTimeout(()=>{ if(shieldEl){shieldEl.remove();shieldEl=null;} },420); }
   }, 1200);
@@ -938,16 +970,40 @@ function minimaxFallback(board,ep,castling,diff){const depths=[1,2,3,4];const de
 function requestStockfishMove(board,ep,castling,diff,callback){if(!sfWorker||!sfReady){callback(minimaxFallback(board,ep,castling,diff));return;}const fen=boardToFEN(board,'black',ep,castling),skill=SF_SKILL[diff]??10,depth=SF_DEPTH[diff]??8,time=SF_TIME[diff]??500;sfCallback=uci=>{if(!uci||uci==='(none)'){callback(minimaxFallback(board,ep,castling,diff));return;}callback(uciToMove(uci,board,ep,castling));};sfWorker.postMessage('ucinewgame');sfWorker.postMessage(`setoption name Skill Level value ${skill}`);sfWorker.postMessage(`position fen ${fen}`);sfWorker.postMessage(`go depth ${depth} movetime ${time}`);}
 
 // =====================================================
-//  RPG SYSTEM
+//  RPG SYSTEM — FIXED POWER SCALING
 // =====================================================
+/*
+  SCALING PHILOSOPHY:
+  - Player baseAtk starts at 20; enemy HP should take ~4-6 hits for pawns,
+    ~8-12 hits for bosses, ~15-20 hits for ultima enemies at level 1.
+  - Enemy ATK should deal ~15-25% of player maxHP per hit (normal enemies)
+    and ~25-40% for boss/ultima enemies.
+  - diffMult and levelBonus scale both sides proportionally.
+  - Enemy tier adds a DEFENSE stat that reduces player damage by a flat %.
+  - This prevents low-level spells / basic attacks from one-shotting anything
+    with significant HP, and ensures Queens/Kings feel genuinely threatening.
+*/
+
+// Base stats at difficulty=1, level=1 (diffMult=1.0, levelBonus=1.0)
+// Player baseAtk=20, playerMaxHp=100
+// Pawn:   HP=55,  ATK=12, DEF=0    → player needs ~3 hits, enemy deals ~12% HP/hit
+// Knight: HP=140, ATK=18, DEF=0.10 → player needs ~8 hits, enemy deals ~18% HP/hit
+// Bishop: HP=130, ATK=16, DEF=0.10 → player needs ~7 hits, enemy deals ~16% HP/hit
+// Rook:   HP=200, ATK=22, DEF=0.18 → player needs ~12 hits, enemy deals ~22% HP/hit
+// Queen:  HP=380, ATK=32, DEF=0.28 → player needs ~22 hits, enemy deals ~32% HP/hit
+// King:   HP=600, ATK=44, DEF=0.38 → player needs ~35 hits, enemy deals ~44% HP/hit
 const PIECE_BATTLE = {
-  P: { name:'PAWN',      sprite:'♟', hp:30,  atk:8,  xp:20,  tier:'normal', color:'#aaaaaa' },
-  N: { name:'KNIGHT',    sprite:'♞', hp:70,  atk:18, xp:60,  tier:'boss',   color:'#88bb88' },
-  B: { name:'BISHOP',    sprite:'♝', hp:65,  atk:16, xp:55,  tier:'boss',   color:'#8888ff' },
-  R: { name:'ROOK',      sprite:'♜', hp:90,  atk:22, xp:80,  tier:'boss',   color:'#ff8844' },
-  Q: { name:'QUEEN',     sprite:'♛', hp:160, atk:35, xp:150, tier:'ultima', color:'#ff44ff' },
-  K: { name:'DARK KING', sprite:'♚', hp:250, atk:45, xp:300, tier:'ultima', color:'#ffdd00' }
+  P: { name:'PAWN',      sprite:'♟', hp:55,  atk:12, def:0.00, xp:25,  tier:'normal', color:'#aaaaaa' },
+  N: { name:'KNIGHT',    sprite:'♞', hp:140, atk:18, def:0.10, xp:70,  tier:'boss',   color:'#88bb88' },
+  B: { name:'BISHOP',    sprite:'♝', hp:130, atk:16, def:0.10, xp:65,  tier:'boss',   color:'#8888ff' },
+  R: { name:'ROOK',      sprite:'♜', hp:200, atk:22, def:0.18, xp:90,  tier:'boss',   color:'#ff8844' },
+  Q: { name:'QUEEN',     sprite:'♛', hp:380, atk:32, def:0.28, xp:160, tier:'ultima', color:'#ff44ff' },
+  K: { name:'DARK KING', sprite:'♚', hp:600, atk:44, def:0.38, xp:320, tier:'ultima', color:'#ffdd00' }
 };
+
+// Player attack is now CAPPED relative to enemy tier to prevent one-shots
+// Cap: normal=40, boss=80, ultima=150 base damage ceiling (before multipliers)
+const TIER_DMG_CAP = { normal: 45, boss: 95, ultima: 180 };
 
 const SPELLS = [
   { id:'fire',    name:'FIRE',    icon:'🔥', mp:10, desc:'Single hit',       dmgMult:1.8, type:'dmg', sfx:'fire',    fxType:'fire'    },
@@ -984,13 +1040,31 @@ let RPG = {
 
 function rpgLevelUp(){
   RPG.level++;
-  RPG.maxHp = Math.min(999, RPG.maxHp + 20);
+  RPG.maxHp = Math.min(999, RPG.maxHp + 25);
   RPG.maxMp = Math.min(999, RPG.maxMp + 10);
   RPG.hp = RPG.maxHp;
   RPG.mp = RPG.maxMp;
-  RPG.baseAtk = Math.floor(RPG.baseAtk * 1.15);
+  // Moderate ATK growth — player gets stronger but enemies scale too
+  RPG.baseAtk = Math.floor(RPG.baseAtk * 1.12);
 }
 function rpgXpNeeded(){return RPG.level * 100;}
+
+// Core damage calculation with tier-based defense and damage cap
+function calcPlayerDmg(rawAtk, tier, buffMult, isMagic){
+  // Apply enemy tier defense reduction
+  const tierData = PIECE_BATTLE;
+  // Find current enemy tier defense from BATTLE
+  const enemyDef = BATTLE.enemy ? BATTLE.enemy.def : 0;
+  // Magic pierces 40% of defense (MDEF buff helps more)
+  const defMult = isMagic ? (1 - enemyDef * 0.6) : (1 - enemyDef);
+  let dmg = Math.floor(rawAtk * buffMult * defMult * (0.88 + Math.random()*0.24));
+  // Apply damage cap based on tier (prevents one-shots on high-HP enemies)
+  const cap = TIER_DMG_CAP[tier] || 45;
+  // Cap scales with player level so fights stay fair at higher levels
+  const scaledCap = Math.floor(cap * (1 + (RPG.level - 1) * 0.18));
+  dmg = Math.min(dmg, scaledCap);
+  return Math.max(1, dmg);
+}
 
 let BATTLE = {
   active: false,
@@ -1113,14 +1187,13 @@ function battleAttack(){
   heroEl.classList.remove('atk');void heroEl.offsetWidth;heroEl.classList.add('atk');
   setTimeout(()=>heroEl.classList.remove('atk'),400);
 
-  // SLASH EFFECT on enemy
   const enemyEl=document.getElementById('enemySprite');
   setTimeout(()=>showSlashEffect(enemyEl), 150);
 
-  let dmg = Math.floor(RPG.baseAtk * (0.85 + Math.random()*0.3));
-  if(RPG.buffs.atk) dmg = Math.floor(dmg * (1 + RPG.buffs.atk));
-  const crit = Math.random() < 0.1;
-  if(crit) dmg = Math.floor(dmg * 2);
+  const crit = Math.random() < 0.10;
+  const atkBuffMult = crit ? 2.0 : (1 + (RPG.buffs.atk || 0));
+  // calcPlayerDmg handles tier defense and damage cap
+  let dmg = calcPlayerDmg(RPG.baseAtk, BATTLE.enemy.tier, atkBuffMult, false);
 
   setTimeout(()=>{
     enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
@@ -1154,14 +1227,14 @@ function castSpell(id){
   setTimeout(()=>heroEl.classList.remove('atk'),400);
 
   if(spell.type==='dmg'){
-    let dmg = Math.floor(RPG.baseAtk * spell.dmgMult * (0.9+Math.random()*0.2));
-    if(spell.bonus==='ultima' && BATTLE.enemy && BATTLE.enemy.tier==='ultima') dmg = Math.floor(dmg*1.6);
-    if(RPG.buffs.atk) dmg = Math.floor(dmg*(1+RPG.buffs.atk));
+    // Magic uses spell's dmgMult, ignores 60% of defense (magic penetration)
+    // Holy gets big bonus vs ultima tier
+    let holyMult = (spell.bonus==='ultima' && BATTLE.enemy && BATTLE.enemy.tier==='ultima') ? 1.5 : 1.0;
+    const atkBuffMult = spell.dmgMult * holyMult * (1 + (RPG.buffs.atk || 0) * 0.5);
+    let dmg = calcPlayerDmg(RPG.baseAtk, BATTLE.enemy.tier, atkBuffMult, true);
     if(spell.slow) BATTLE.enemySlowed=true;
 
     const enemyEl=document.getElementById('enemySprite');
-
-    // Magic visual effect on enemy
     setTimeout(()=>{
       if(spell.fxType) showMagicEffect(enemyEl, spell.fxType);
     }, 100);
@@ -1179,8 +1252,6 @@ function castSpell(id){
   } else if(spell.type==='heal'){
     const healed = Math.min(spell.heal, RPG.maxHp - RPG.hp);
     RPG.hp = Math.min(RPG.maxHp, RPG.hp + spell.heal);
-
-    // Heal visual effect on hero
     showMagicEffect(heroEl, 'heal');
     showDamage(heroEl, '💚 +'+healed, '#44ff88');
     battleLog(`${spell.icon} <span class="log-heal">${spell.name}: healed ${healed} HP!</span>`);
@@ -1222,12 +1293,14 @@ function useItem(id){
     showMagicEffect(heroEl,'holy');
     battleLog(`${item.icon} <span class="log-gold">ELIXIR: Full HP & MP restored!</span>`);
   } else if(item.dmg){
+    // Grenades are items, not magic — they bypass defense but still respect cap
+    const grenadeDmg = Math.min(item.dmg, TIER_DMG_CAP[BATTLE.enemy.tier] || 45);
     const enemyEl=document.getElementById('enemySprite');
     showMagicEffect(enemyEl,'fire');
     enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
-    showDamage(enemyEl,'💣 '+item.dmg,'#ffaa44');
-    BATTLE.enemyHp=Math.max(0,BATTLE.enemyHp-item.dmg);
-    battleLog(`${item.icon} <span class="log-dmg">GRENADE: ${item.dmg} damage!</span>`);
+    showDamage(enemyEl,'💣 '+grenadeDmg,'#ffaa44');
+    BATTLE.enemyHp=Math.max(0,BATTLE.enemyHp-grenadeDmg);
+    battleLog(`${item.icon} <span class="log-dmg">GRENADE: ${grenadeDmg} damage!</span>`);
   } else if(item.revive){
     RPG.hp=Math.floor(RPG.maxHp*0.5);
     RPG.defeated=false;
@@ -1245,10 +1318,7 @@ function battleDefend(){
   BATTLE.playerTurn=false;
   setMenuDisabled(true);
   RPG.buffs._defend=true;
-
-  // SHIELD VISUAL EFFECT
   showShieldEffect();
-
   battleLog(`🛡 <span class="log-gold">Defending! Damage reduced by 50%!</span>`);
   buildMainMenu();
   setTimeout(()=>enemyTurn(),600);
@@ -1271,10 +1341,12 @@ function enemyTurn(){
 
   let atkDelay = BATTLE.enemySlowed ? 600 : 0;
   setTimeout(()=>{
-    let dmg = Math.floor(en.atk * (0.8+Math.random()*0.4));
+    let dmg = Math.floor(en.atk * (0.80+Math.random()*0.40));
+    // Player defense buffs
     if(RPG.buffs.def) dmg = Math.floor(dmg*(1-RPG.buffs.def));
     if(RPG.buffs._defend) dmg = Math.floor(dmg*0.5);
     let special='';
+    // Boss/ultima get a special attack 25% of the time (harder hit)
     if((en.tier==='boss'||en.tier==='ultima') && Math.random()<0.25){
       dmg = Math.floor(dmg*1.8);
       special=`<span class="log-boss"> [${en.tier==='ultima'?'ULTIMA':'SPECIAL'}!]</span>`;
@@ -1357,7 +1429,6 @@ function endBattle(won){
 
 function hideBattle(){
   document.getElementById('rpgBattle').classList.remove('show');
-  // Clean up any shield
   if(shieldEl){ shieldEl.remove(); shieldEl=null; }
   switchMusic('idle');
   updateRpgHud();
@@ -1366,13 +1437,16 @@ function hideBattle(){
 function startBattle(playerPiece, enemyPiece, onWin, onLose){
   const ptype=typ(enemyPiece);
   const data = PIECE_BATTLE[ptype] || PIECE_BATTLE.P;
-  const diffMult = [0.7,1.0,1.4,1.8][G.diff] || 1.0;
-  const levelBonus = 1 + (RPG.level-1)*0.1;
+  // Difficulty multiplier: easy=0.65, normal=1.0, hard=1.5, extreme=2.1
+  const diffMult = [0.65,1.0,1.5,2.1][G.diff] || 1.0;
+  // Level bonus: each player level adds 10% to enemy stats too (balanced)
+  const levelBonus = 1 + (RPG.level-1)*0.10;
 
   BATTLE.active=true;
   BATTLE.enemy={...data};
   BATTLE.enemyPiece = enemyPiece;
   BATTLE.enemy.atk=Math.floor(data.atk*diffMult*levelBonus);
+  BATTLE.enemy.def=data.def; // defense is a fixed ratio, not scaled
   BATTLE.enemyMaxHp=Math.floor(data.hp*diffMult*levelBonus);
   BATTLE.enemyHp=BATTLE.enemyMaxHp;
   BATTLE.playerTurn=true;
@@ -1389,9 +1463,7 @@ function startBattle(playerPiece, enemyPiece, onWin, onLose){
   buildMainMenu();
   setMenuDisabled(false);
 
-  // Flash chessboard bg on battle start
   setTimeout(()=>flashChessBg(), 100);
-
   switchMusic(battleMusicForTier(data.tier));
 
   if(data.tier==='ultima') sndUltimaStart();
@@ -1704,7 +1776,6 @@ const modeDescs=['Classic chess vs AI with Stockfish engine','⚔ Battle pieces 
 function showModePanel(){
   document.getElementById('modePanel').style.display='flex';
   refreshModeButtons();
-  // FIX: reset music.current so idle plays fresh next interaction
   music.current = null;
 }
 function hideModePanel(){document.getElementById('modePanel').style.display='none';}
