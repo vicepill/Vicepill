@@ -110,29 +110,46 @@ body::after{
 }
 #rpgBattle.show{display:flex;}
 
-/* Battle scene */
+/* ===== CHESSBOARD BATTLE SCENE ===== */
 .battle-scene{
   flex:1;position:relative;display:flex;align-items:flex-end;justify-content:space-between;
   padding:6px 10px 0;min-height:120px;
-  background:linear-gradient(180deg,#080318 0%,#150830 40%,#1a0f0a 70%,#2a1a08 100%);
-  border-bottom:2px solid #2a1a3a;overflow:hidden;
+  overflow:hidden;
+  border-bottom:2px solid #2a1a3a;
 }
-.battle-scene::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 50% 100%,rgba(100,50,200,.15) 0%,transparent 70%);
+
+/* Chess pattern background */
+.battle-chess-bg{
+  position:absolute;inset:0;z-index:0;
+  display:grid;
+  grid-template-columns:repeat(8,12.5%);
+  grid-template-rows:repeat(5,20%);
+  opacity:0.22;
+  pointer-events:none;
 }
-.battle-scene::after{
+.chess-cell-l{background:#c8b882;}
+.chess-cell-d{background:#4a6741;}
+
+/* Gradient overlays on top of chess bg */
+.battle-scene-overlay{
+  position:absolute;inset:0;z-index:1;
+  background:
+    linear-gradient(180deg,rgba(8,3,24,0.75) 0%,rgba(20,8,40,0.5) 40%,rgba(26,15,10,0.3) 70%,rgba(42,26,8,0.15) 100%),
+    radial-gradient(ellipse at 50% 100%,rgba(100,50,200,.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+.battle-scene-overlay::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,rgba(150,80,255,.4),transparent);
 }
 
 .battle-particle{
-  position:absolute;border-radius:50%;pointer-events:none;animation:floatUp 3s infinite;
+  position:absolute;border-radius:50%;pointer-events:none;z-index:3;animation:floatUp 3s infinite;
 }
 @keyframes floatUp{0%{transform:translateY(0);opacity:.6}100%{transform:translateY(-80px);opacity:0}}
 
 .enemy-sprite{
-  font-size:36px;line-height:1;position:relative;z-index:2;
+  font-size:36px;line-height:1;position:relative;z-index:4;
   animation:enemyFloat 2s ease-in-out infinite;filter:drop-shadow(0 0 8px rgba(200,100,255,.6));
   align-self:flex-end;margin-bottom:8px;
 }
@@ -143,7 +160,7 @@ body::after{
 @keyframes enemyAtk{0%{transform:translateX(0)}30%{transform:translateX(-15px)}60%{transform:translateX(5px)}100%{transform:translateX(0)}}
 
 .hero-sprite{
-  font-size:32px;line-height:1;position:relative;z-index:2;
+  font-size:32px;line-height:1;position:relative;z-index:4;
   align-self:flex-end;margin-bottom:8px;
   filter:drop-shadow(0 0 6px rgba(106,180,232,.5));
 }
@@ -151,6 +168,58 @@ body::after{
 @keyframes heroHurt{0%,100%{transform:translateX(0)}25%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
 .hero-sprite.atk{animation:heroAtk .35s;}
 @keyframes heroAtk{0%{transform:translateX(0)}40%{transform:translateX(18px)}100%{transform:translateX(0)}}
+
+/* ===== SLASH EFFECT ===== */
+.slash-effect{
+  position:absolute;z-index:10;pointer-events:none;
+  animation:slashAnim 0.45s forwards;
+  top:50%;left:50%;transform-origin:center center;
+  transform:translate(-50%,-60%);
+}
+@keyframes slashAnim{
+  0%{opacity:0;transform:translate(-50%,-60%) scale(0.3) rotate(-30deg);}
+  20%{opacity:1;transform:translate(-50%,-60%) scale(1.1) rotate(-5deg);}
+  55%{opacity:0.9;transform:translate(-50%,-60%) scale(1) rotate(0deg);}
+  100%{opacity:0;transform:translate(-50%,-60%) scale(1.2) rotate(10deg);}
+}
+
+/* ===== SHIELD EFFECT ===== */
+.shield-aura{
+  position:absolute;z-index:5;pointer-events:none;font-size:40px;
+  bottom:2px;left:50%;transform:translateX(-50%);
+  animation:shieldAppear 0.3s ease-out forwards, shieldPulse 0.7s 0.3s ease-in-out infinite alternate;
+  filter:drop-shadow(0 0 12px rgba(100,200,255,0.9));
+  opacity:0;
+}
+@keyframes shieldAppear{0%{opacity:0;transform:translateX(-50%) scale(0.4);}100%{opacity:1;transform:translateX(-50%) scale(1.1);}}
+@keyframes shieldPulse{from{filter:drop-shadow(0 0 8px rgba(100,200,255,0.7));}to{filter:drop-shadow(0 0 20px rgba(100,200,255,1)) brightness(1.3);}}
+.shield-aura.fading{animation:shieldFade 0.4s forwards !important;}
+@keyframes shieldFade{to{opacity:0;transform:translateX(-50%) scale(0.5);}}
+
+/* ===== MAGIC EFFECT PARTICLES ===== */
+.magic-particle{
+  position:absolute;z-index:9;pointer-events:none;border-radius:50%;
+}
+.magic-particle.fire{background:radial-gradient(circle,#fff8a0,#ff8c00,#ff2200);box-shadow:0 0 6px #ff4400;}
+.magic-particle.ice{background:radial-gradient(circle,#ffffff,#a0d8ff,#0080ff);box-shadow:0 0 6px #00aaff;}
+.magic-particle.thunder{background:radial-gradient(circle,#ffffff,#ffff80,#eeee00);box-shadow:0 0 8px #ffee00;}
+.magic-particle.holy{background:radial-gradient(circle,#ffffff,#fffaaa,#ffee44);box-shadow:0 0 10px #ffff88;}
+.magic-particle.heal{background:radial-gradient(circle,#ffffff,#88ffbb,#00cc66);box-shadow:0 0 6px #00ee66;}
+
+@keyframes mpFire{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(0.2);opacity:0;}}
+@keyframes mpIce{0%{transform:translate(0,0) scale(1) rotate(0deg);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(0.1) rotate(360deg);opacity:0;}}
+@keyframes mpThunder{0%{transform:translate(0,0) scaleY(1);opacity:1;}30%{transform:translate(var(--dx),calc(var(--dy)*0.3)) scaleY(3);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scaleY(0.5);opacity:0;}}
+@keyframes mpHoly{0%{transform:translate(0,0) scale(1);opacity:1;}50%{transform:translate(calc(var(--dx)*0.5),calc(var(--dy)*0.5)) scale(1.5);opacity:0.8;}100%{transform:translate(var(--dx),var(--dy)) scale(2);opacity:0;}}
+@keyframes mpHeal{0%{transform:translate(0,0) scale(0.5);opacity:0;}20%{opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(1.4);opacity:0;}}
+
+/* Thunder bolt SVG line */
+.thunder-bolt{
+  position:absolute;z-index:9;pointer-events:none;
+  animation:boltFlash 0.55s forwards;
+}
+@keyframes boltFlash{
+  0%{opacity:0;}10%{opacity:1;}30%{opacity:0.7;}50%{opacity:1;}70%{opacity:0.4;}100%{opacity:0;}
+}
 
 /* HP/MP bars */
 .battle-stats{padding:4px 8px;background:rgba(0,0,0,.5);}
@@ -353,8 +422,15 @@ body::after{
       <!-- RPG BATTLE SCREEN -->
       <div id="rpgBattle">
         <div class="battle-scene" id="battleScene">
+          <!-- Chessboard background grid -->
+          <div class="battle-chess-bg" id="chessBg"></div>
+          <!-- Gradient overlay -->
+          <div class="battle-scene-overlay"></div>
+          <!-- Hero shield container -->
+          <div style="position:relative;z-index:4;align-self:flex-end;margin-bottom:8px;" id="heroContainer">
+            <div class="hero-sprite" id="heroSprite">♟</div>
+          </div>
           <div class="enemy-sprite" id="enemySprite">♜</div>
-          <div class="hero-sprite" id="heroSprite">♟</div>
         </div>
         <div class="battle-stats">
           <div class="stat-row">
@@ -467,6 +543,7 @@ body::after{
           <div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div>
           <div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div>
         </div>
+        <div style="font-family:'Pixelify Sans',monospace;font-size:6px;color:#3a3d4a;letter-spacing:1px;">v2.1</div>
       </div>
       <div class="btn-cluster">
         <div class="btn-action btn-y" id="btn-y">Y</div>
@@ -480,11 +557,23 @@ body::after{
 
 <script>
 // =====================================================
-//  AUDIO ENGINE — BATTLE MUSIC ROUTING
+//  BUILD CHESS BG FOR BATTLE SCENE
+// =====================================================
+(function(){
+  const bg = document.getElementById('chessBg');
+  for(let r=0;r<5;r++) for(let c=0;c<8;c++){
+    const cell=document.createElement('div');
+    cell.className=(r+c)%2===0?'chess-cell-l':'chess-cell-d';
+    bg.appendChild(cell);
+  }
+})();
+
+// =====================================================
+//  AUDIO ENGINE — FIX: robust idle music triggering
 // =====================================================
 let audioCtx;
+let musicStarted = false;
 
-// Three separate Audio objects for each music layer
 const music = {
   idle:   new Audio('idle.mp3'),
   battle: new Audio('battle.mp3'),
@@ -493,22 +582,20 @@ const music = {
   current: null
 };
 
-// Configure all tracks
 Object.entries(music).forEach(([key, track]) => {
   if(track instanceof Audio) {
     track.loop = true;
     track.volume = 0.35;
+    // Preload
+    track.load();
   }
 });
 
 function switchMusic(trackName) {
-  // If already playing this track, do nothing
   if(music.current === trackName) return;
 
-  // Fade out and stop whatever is currently playing
   const prev = music[music.current];
   if(prev && prev instanceof Audio && !prev.paused) {
-    // Quick fade-out then pause
     const fadeOut = setInterval(() => {
       if(prev.volume > 0.03) {
         prev.volume = Math.max(0, prev.volume - 0.04);
@@ -525,20 +612,26 @@ function switchMusic(trackName) {
   const next = music[trackName];
   if(next && next instanceof Audio) {
     next.volume = 0;
-    next.play().catch(() => {});
-    // Fade in
-    const fadeIn = setInterval(() => {
-      if(next.volume < 0.32) {
-        next.volume = Math.min(0.35, next.volume + 0.04);
-      } else {
-        next.volume = 0.35;
-        clearInterval(fadeIn);
-      }
-    }, 40);
+    next.currentTime = 0;
+    const playPromise = next.play();
+    if(playPromise !== undefined){
+      playPromise.then(()=>{
+        const fadeIn = setInterval(() => {
+          if(next.volume < 0.32) {
+            next.volume = Math.min(0.35, next.volume + 0.04);
+          } else {
+            next.volume = 0.35;
+            clearInterval(fadeIn);
+          }
+        }, 40);
+      }).catch(()=>{
+        // Will retry on next user gesture
+        music.current = null;
+      });
+    }
   }
 }
 
-// Determine which battle music to use based on piece tier
 function battleMusicForTier(tier) {
   if(tier === 'ultima') return 'ultima';
   if(tier === 'boss')   return 'boss';
@@ -548,8 +641,10 @@ function battleMusicForTier(tier) {
 function getAudio(){
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
-  // Start idle music on first user interaction if nothing is playing
-  if(!music.current) switchMusic('idle');
+  // FIX: always try to start idle if nothing is playing
+  if(!music.current || (!BATTLE.active && music.current !== 'idle')) {
+    switchMusic('idle');
+  }
   return audioCtx;
 }
 
@@ -580,7 +675,6 @@ function sndDiffNav(){playSfx(260,300,'square',.06,.05);}
 function sndDiffConfirm(){playSfx(440,660,'sine',.15,.1);playSfx(660,880,'sine',.12,.08,.1);}
 function sndModeNav(){playSfx(300,360,'sine',.08,.06);}
 function sndModeConfirm(){[262,330,392,523].forEach((f,i)=>playSfx(f,f*1.1,'sine',.2,.07,i*.07));}
-// RPG battle sfx
 function sndBattleStart(){[200,300,400,600,800].forEach((f,i)=>playSfx(f,f*1.5,'sawtooth',.15,.1,i*.08));}
 function sndBossStart(){[150,200,250,350,500,700].forEach((f,i)=>playSfx(f,f*2,'sawtooth',.2,.12,i*.07));}
 function sndUltimaStart(){[100,150,200,300,500,800,1000].forEach((f,i)=>playSfx(f,f*2.5,'sawtooth',.25,.12,i*.06));}
@@ -594,10 +688,181 @@ function sndBuff(){playSfx(400,600,'sine',.15,.08);playSfx(600,900,'sine',.12,.0
 function sndItemUse(){playSfx(440,880,'triangle',.15,.08);}
 function sndVictory(){[262,330,392,523,659,784].forEach((f,i)=>playSfx(f,f*1.05,'sine',.4,.08,i*.12));}
 function sndDefeat(){[400,300,200,150,100].forEach((f,i)=>playSfx(f,f*.5,'sawtooth',.3,.1,i*.15));}
+function sndShield(){playSfx(300,600,'sine',.1,.08);playSfx(500,900,'sine',.12,.06,.08);}
 function sndIntro(){
   const melody=[262,294,330,392,440,392,330,262,294,330,262];
   melody.forEach((f,i)=>playSfx(f,f,'sine',.18,.1,i*.15));
 }
+
+// =====================================================
+//  VISUAL EFFECTS
+// =====================================================
+
+// Chessboard tile highlight flicker on battle start
+function flashChessBg(){
+  const cells = document.querySelectorAll('#chessBg > div');
+  cells.forEach((cell,i)=>{
+    setTimeout(()=>{
+      cell.style.transition='opacity 0.08s';
+      cell.style.opacity='0.6';
+      setTimeout(()=>{ cell.style.opacity=''; }, 120);
+    }, i * 18);
+  });
+}
+
+// Draw a slash SVG on target element
+function showSlashEffect(targetEl){
+  const scene = document.getElementById('battleScene');
+  const rect = targetEl.getBoundingClientRect();
+  const sceneRect = scene.getBoundingClientRect();
+
+  const slash = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  slash.setAttribute('width','60');
+  slash.setAttribute('height','60');
+  slash.setAttribute('viewBox','0 0 60 60');
+  slash.style.cssText = `position:absolute;z-index:10;pointer-events:none;
+    left:${rect.left - sceneRect.left + rect.width/2 - 30}px;
+    top:${rect.top - sceneRect.top + rect.height/2 - 30}px;
+    animation:slashAnim 0.45s forwards;`;
+
+  // Main slash line
+  const line1 = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line1.setAttribute('x1','5'); line1.setAttribute('y1','10');
+  line1.setAttribute('x2','55'); line1.setAttribute('y2','52');
+  line1.setAttribute('stroke','#ffffff'); line1.setAttribute('stroke-width','4');
+  line1.setAttribute('stroke-linecap','round');
+  line1.setAttribute('opacity','0.95');
+
+  // Second slash (parallel)
+  const line2 = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line2.setAttribute('x1','12'); line2.setAttribute('y1','5');
+  line2.setAttribute('x2','58'); line2.setAttribute('y2','48');
+  line2.setAttribute('stroke','#ffcc66'); line2.setAttribute('stroke-width','2');
+  line2.setAttribute('stroke-linecap','round');
+  line2.setAttribute('opacity','0.7');
+
+  // Glow line
+  const glow = document.createElementNS('http://www.w3.org/2000/svg','line');
+  glow.setAttribute('x1','5'); glow.setAttribute('y1','10');
+  glow.setAttribute('x2','55'); glow.setAttribute('y2','52');
+  glow.setAttribute('stroke','#ff8800'); glow.setAttribute('stroke-width','8');
+  glow.setAttribute('stroke-linecap','round');
+  glow.setAttribute('opacity','0.3');
+
+  slash.appendChild(glow);
+  slash.appendChild(line1);
+  slash.appendChild(line2);
+  scene.appendChild(slash);
+  setTimeout(()=>slash.remove(), 500);
+}
+
+// Spawn magic particles around a target element
+function showMagicEffect(targetEl, type){
+  const scene = document.getElementById('battleScene');
+  const rect = targetEl.getBoundingClientRect();
+  const sceneRect = scene.getBoundingClientRect();
+  const cx = rect.left - sceneRect.left + rect.width/2;
+  const cy = rect.top - sceneRect.top + rect.height/2;
+
+  const count = type==='thunder'?12:18;
+  const dur = type==='thunder'?380:520;
+
+  for(let i=0;i<count;i++){
+    const p = document.createElement('div');
+    p.className = `magic-particle ${type}`;
+    const size = Math.random()*6 + 3;
+    const angle = (i/count)*Math.PI*2 + Math.random()*0.4;
+    const dist = 20 + Math.random()*30;
+    const dx = Math.cos(angle)*dist;
+    const dy = Math.sin(angle)*dist - 10;
+    const delay = Math.random()*120;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${cx - size/2}px;top:${cy - size/2}px;
+      --dx:${dx}px;--dy:${dy}px;
+      animation-name:mp${capitalize(type)};
+      animation-duration:${dur + Math.random()*150}ms;
+      animation-delay:${delay}ms;
+      animation-fill-mode:both;
+      animation-timing-function:ease-out;`;
+    scene.appendChild(p);
+    setTimeout(()=>p.remove(), dur + delay + 200);
+  }
+
+  // Extra: thunder bolt line
+  if(type==='thunder'){
+    const bolt = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    bolt.setAttribute('width','80');bolt.setAttribute('height','80');
+    bolt.setAttribute('viewBox','0 0 80 80');
+    bolt.classList.add('thunder-bolt');
+    bolt.style.cssText=`left:${cx-40}px;top:${cy-70}px;position:absolute;z-index:9;pointer-events:none;`;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    path.setAttribute('points','40,0 28,32 38,32 20,75 50,35 38,35 50,0');
+    path.setAttribute('fill','#ffff66');path.setAttribute('stroke','#ffffff');path.setAttribute('stroke-width','1.5');
+    const glow2 = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    glow2.setAttribute('points','40,0 28,32 38,32 20,75 50,35 38,35 50,0');
+    glow2.setAttribute('fill','none');glow2.setAttribute('stroke','#ffff00');glow2.setAttribute('stroke-width','5');glow2.setAttribute('opacity','0.4');
+    bolt.appendChild(glow2);bolt.appendChild(path);
+    scene.appendChild(bolt);
+    setTimeout(()=>bolt.remove(),600);
+  }
+
+  // Holy: ring of stars
+  if(type==='holy'){
+    for(let i=0;i<8;i++){
+      const star = document.createElement('div');
+      star.textContent='✦';
+      star.style.cssText=`position:absolute;z-index:9;pointer-events:none;font-size:10px;color:#ffffaa;
+        left:${cx + Math.cos(i/8*Math.PI*2)*35 - 5}px;
+        top:${cy + Math.sin(i/8*Math.PI*2)*35 - 5}px;
+        animation:mpHoly 600ms ${i*50}ms both ease-out;
+        --dx:${Math.cos(i/8*Math.PI*2)*12}px;--dy:${Math.sin(i/8*Math.PI*2)*12-20}px;
+        text-shadow:0 0 8px #ffff44,0 0 16px #ffaa00;`;
+      scene.appendChild(star);
+      setTimeout(()=>star.remove(),800);
+    }
+  }
+
+  // Heal: rising plus symbols
+  if(type==='heal'){
+    const symbols=['+','+','♥','✦','+'];
+    symbols.forEach((sym,i)=>{
+      const h = document.createElement('div');
+      h.textContent=sym;
+      const ox=(Math.random()-0.5)*40;
+      h.style.cssText=`position:absolute;z-index:9;pointer-events:none;font-size:${8+Math.random()*6}px;
+        color:#66ffaa;font-family:monospace;font-weight:bold;
+        left:${cx+ox-5}px;top:${cy+10}px;
+        text-shadow:0 0 8px #00ee66;
+        animation:mpHeal 700ms ${i*80}ms both ease-out;
+        --dx:${ox*0.4}px;--dy:${-35 - Math.random()*20}px;`;
+      scene.appendChild(h);
+      setTimeout(()=>h.remove(),900);
+    });
+  }
+}
+
+// Shield sprite on hero
+let shieldEl = null;
+let shieldTimeout = null;
+function showShieldEffect(){
+  const heroContainer = document.getElementById('heroContainer');
+  // Remove existing shield
+  if(shieldEl){ shieldEl.remove(); shieldEl=null; }
+  if(shieldTimeout){ clearTimeout(shieldTimeout); }
+
+  shieldEl = document.createElement('div');
+  shieldEl.className = 'shield-aura';
+  shieldEl.textContent = '🛡';
+  heroContainer.appendChild(shieldEl);
+
+  // Shield stays until next enemy turn resolves (approx 1.4s)
+  shieldTimeout = setTimeout(()=>{
+    if(shieldEl){ shieldEl.classList.add('fading'); setTimeout(()=>{ if(shieldEl){shieldEl.remove();shieldEl=null;} },420); }
+  }, 1200);
+}
+
+function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
 // =====================================================
 //  CHESS ENGINE
@@ -685,12 +950,12 @@ const PIECE_BATTLE = {
 };
 
 const SPELLS = [
-  { id:'fire',    name:'FIRE',    icon:'🔥', mp:10, desc:'Single hit',       dmgMult:1.8, type:'dmg', sfx:'fire'    },
-  { id:'blizzard',name:'BLIZZARD',icon:'❄️', mp:14, desc:'Ice + slow',       dmgMult:1.6, type:'dmg', sfx:'ice', slow:true },
-  { id:'thunder', name:'THUNDER', icon:'⚡', mp:18, desc:'High damage',      dmgMult:2.4, type:'dmg', sfx:'thunder' },
-  { id:'holy',    name:'HOLY',    icon:'✨', mp:25, desc:'vs Kings/Queens',  dmgMult:2.0, type:'dmg', sfx:'holy', bonus:'ultima' },
-  { id:'cure',    name:'CURE',    icon:'💚', mp:8,  desc:'Heal 30 HP',       heal:30,     type:'heal', sfx:'heal'   },
-  { id:'cura',    name:'CURA',    icon:'💗', mp:16, desc:'Heal 60 HP',       heal:60,     type:'heal', sfx:'heal'   },
+  { id:'fire',    name:'FIRE',    icon:'🔥', mp:10, desc:'Single hit',       dmgMult:1.8, type:'dmg', sfx:'fire',    fxType:'fire'    },
+  { id:'blizzard',name:'BLIZZARD',icon:'❄️', mp:14, desc:'Ice + slow',       dmgMult:1.6, type:'dmg', sfx:'ice',     fxType:'ice',    slow:true },
+  { id:'thunder', name:'THUNDER', icon:'⚡', mp:18, desc:'High damage',      dmgMult:2.4, type:'dmg', sfx:'thunder', fxType:'thunder' },
+  { id:'holy',    name:'HOLY',    icon:'✨', mp:25, desc:'vs Kings/Queens',  dmgMult:2.0, type:'dmg', sfx:'holy',    fxType:'holy',   bonus:'ultima' },
+  { id:'cure',    name:'CURE',    icon:'💚', mp:8,  desc:'Heal 30 HP',       heal:30,     type:'heal', sfx:'heal',   fxType:'heal'   },
+  { id:'cura',    name:'CURA',    icon:'💗', mp:16, desc:'Heal 60 HP',       heal:60,     type:'heal', sfx:'heal',   fxType:'heal'   },
   { id:'haste',   name:'HASTE',   icon:'💨', mp:12, desc:'+30% ATK',         type:'buff', buff:'atk', amount:0.3 },
   { id:'protect', name:'PROTECT', icon:'🛡', mp:12, desc:'-30% DMG',         type:'buff', buff:'def', amount:0.3 },
   { id:'shell',   name:'SHELL',   icon:'🔮', mp:12, desc:'-30% MDEF',        type:'buff', buff:'mdef',amount:0.3 },
@@ -761,7 +1026,6 @@ function updateBattleBars(){
   document.getElementById('heroMpVal').textContent=RPG.mp+'/'+RPG.maxMp;
   document.getElementById('enemyHpVal').textContent=BATTLE.enemyHp+'/'+BATTLE.enemyMaxHp;
   document.getElementById('enemyLbl').textContent=BATTLE.enemy?BATTLE.enemy.name.slice(0,5):'FOE';
-  
   const hpBar=document.getElementById('heroHpBar');
   if(hpPct>50) hpBar.style.background='linear-gradient(90deg,#e84a4a,#ff7070)';
   else if(hpPct>25) hpBar.style.background='linear-gradient(90deg,#e8a04a,#ffcc70)';
@@ -774,18 +1038,20 @@ function spawnParticles(){
     const p=document.createElement('div');
     p.className='battle-particle';
     const size=Math.random()*3+1;
-    p.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;bottom:${Math.random()*30}%;background:rgba(${Math.floor(Math.random()*100+100)},${Math.floor(Math.random()*50)},${Math.floor(Math.random()*255)},0.6);animation-delay:${Math.random()*2}s;animation-duration:${2+Math.random()*2}s;`;
+    p.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;bottom:${Math.random()*30}%;background:rgba(${Math.floor(Math.random()*100+100)},${Math.floor(Math.random()*50)},${Math.floor(Math.random()*255)},0.6);animation-delay:${Math.random()*2}s;animation-duration:${2+Math.random()*2}s;z-index:3;`;
     scene.appendChild(p);
   }
 }
 
 function showDamage(el, text, color){
+  const scene=document.getElementById('battleScene');
   const rect = el.getBoundingClientRect();
+  const sceneRect = scene.getBoundingClientRect();
   const pop = document.createElement('div');
   pop.className='dmg-pop';
   pop.textContent=text;
-  pop.style.cssText=`left:${rect.left+rect.width/2-10}px;top:${rect.top-5}px;color:${color||'#ff7070'};`;
-  document.body.appendChild(pop);
+  pop.style.cssText=`left:${rect.left-sceneRect.left+rect.width/2-10}px;top:${rect.top-sceneRect.top}px;color:${color||'#ff7070'};position:absolute;`;
+  scene.appendChild(pop);
   setTimeout(()=>pop.remove(),900);
 }
 
@@ -842,26 +1108,30 @@ function battleAttack(){
   sndHit();
   BATTLE.playerTurn=false;
   setMenuDisabled(true);
+
   const heroEl=document.getElementById('heroSprite');
   heroEl.classList.remove('atk');void heroEl.offsetWidth;heroEl.classList.add('atk');
   setTimeout(()=>heroEl.classList.remove('atk'),400);
+
+  // SLASH EFFECT on enemy
+  const enemyEl=document.getElementById('enemySprite');
+  setTimeout(()=>showSlashEffect(enemyEl), 150);
 
   let dmg = Math.floor(RPG.baseAtk * (0.85 + Math.random()*0.3));
   if(RPG.buffs.atk) dmg = Math.floor(dmg * (1 + RPG.buffs.atk));
   const crit = Math.random() < 0.1;
   if(crit) dmg = Math.floor(dmg * 2);
 
-  const enemyEl=document.getElementById('enemySprite');
-  enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
-  setTimeout(()=>enemyEl.classList.remove('hurt'),400);
-
-  showDamage(enemyEl, (crit?'CRIT! ':'')+dmg, crit?'#ffff44':'#ff9966');
-  if(crit) battleLog(`<span class="log-crit">CRITICAL HIT! ${dmg} damage!</span>`);
-  else battleLog(`You attack for <span class="log-dmg">${dmg} damage</span>!`);
-
-  BATTLE.enemyHp = Math.max(0, BATTLE.enemyHp - dmg);
-  updateBattleBars();
-  setTimeout(()=>checkBattleEnd(()=>enemyTurn()), 700);
+  setTimeout(()=>{
+    enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
+    setTimeout(()=>enemyEl.classList.remove('hurt'),400);
+    showDamage(enemyEl, (crit?'CRIT! ':'')+dmg, crit?'#ffff44':'#ff9966');
+    if(crit) battleLog(`<span class="log-crit">CRITICAL HIT! ${dmg} damage!</span>`);
+    else battleLog(`You attack for <span class="log-dmg">${dmg} damage</span>!`);
+    BATTLE.enemyHp = Math.max(0, BATTLE.enemyHp - dmg);
+    updateBattleBars();
+    setTimeout(()=>checkBattleEnd(()=>enemyTurn()), 700);
+  }, 200);
 }
 
 function castSpell(id){
@@ -888,20 +1158,35 @@ function castSpell(id){
     if(spell.bonus==='ultima' && BATTLE.enemy && BATTLE.enemy.tier==='ultima') dmg = Math.floor(dmg*1.6);
     if(RPG.buffs.atk) dmg = Math.floor(dmg*(1+RPG.buffs.atk));
     if(spell.slow) BATTLE.enemySlowed=true;
+
     const enemyEl=document.getElementById('enemySprite');
-    enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
-    showDamage(enemyEl, spell.icon+' '+dmg, '#88aaff');
-    BATTLE.enemyHp = Math.max(0, BATTLE.enemyHp - dmg);
-    battleLog(`${spell.icon} <span class="log-mp">${spell.name}</span> hits for <span class="log-dmg">${dmg}</span>!${spell.slow?' Enemy slowed!':''}`);
-    updateBattleBars();
-    setTimeout(()=>checkBattleEnd(()=>enemyTurn()),800);
+
+    // Magic visual effect on enemy
+    setTimeout(()=>{
+      if(spell.fxType) showMagicEffect(enemyEl, spell.fxType);
+    }, 100);
+
+    setTimeout(()=>{
+      enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
+      setTimeout(()=>enemyEl.classList.remove('hurt'),400);
+      showDamage(enemyEl, spell.icon+' '+dmg, '#88aaff');
+      BATTLE.enemyHp = Math.max(0, BATTLE.enemyHp - dmg);
+      battleLog(`${spell.icon} <span class="log-mp">${spell.name}</span> hits for <span class="log-dmg">${dmg}</span>!${spell.slow?' Enemy slowed!':''}`);
+      updateBattleBars();
+      setTimeout(()=>checkBattleEnd(()=>enemyTurn()),800);
+    }, 320);
+
   } else if(spell.type==='heal'){
     const healed = Math.min(spell.heal, RPG.maxHp - RPG.hp);
     RPG.hp = Math.min(RPG.maxHp, RPG.hp + spell.heal);
+
+    // Heal visual effect on hero
+    showMagicEffect(heroEl, 'heal');
     showDamage(heroEl, '💚 +'+healed, '#44ff88');
     battleLog(`${spell.icon} <span class="log-heal">${spell.name}: healed ${healed} HP!</span>`);
     updateBattleBars();
     setTimeout(()=>enemyTurn(),700);
+
   } else if(spell.type==='buff'){
     RPG.buffs[spell.buff] = spell.amount;
     battleLog(`${spell.icon} <span class="log-gold">${spell.name} activated!</span>`);
@@ -924,6 +1209,7 @@ function useItem(id){
   if(item.heal){
     const healed=Math.min(item.heal, RPG.maxHp - RPG.hp);
     RPG.hp = Math.min(RPG.maxHp, RPG.hp + item.heal);
+    showMagicEffect(heroEl,'heal');
     showDamage(heroEl,'💊 +'+healed,'#44ff88');
     battleLog(`${item.icon} <span class="log-heal">${item.name}: +${healed} HP!</span>`);
   } else if(item.restoreMp){
@@ -933,9 +1219,11 @@ function useItem(id){
     battleLog(`${item.icon} <span class="log-mp">${item.name}: +${restored} MP!</span>`);
   } else if(item.elixir){
     RPG.hp=RPG.maxHp; RPG.mp=RPG.maxMp;
+    showMagicEffect(heroEl,'holy');
     battleLog(`${item.icon} <span class="log-gold">ELIXIR: Full HP & MP restored!</span>`);
   } else if(item.dmg){
     const enemyEl=document.getElementById('enemySprite');
+    showMagicEffect(enemyEl,'fire');
     enemyEl.classList.remove('hurt');void enemyEl.offsetWidth;enemyEl.classList.add('hurt');
     showDamage(enemyEl,'💣 '+item.dmg,'#ffaa44');
     BATTLE.enemyHp=Math.max(0,BATTLE.enemyHp-item.dmg);
@@ -943,6 +1231,7 @@ function useItem(id){
   } else if(item.revive){
     RPG.hp=Math.floor(RPG.maxHp*0.5);
     RPG.defeated=false;
+    showMagicEffect(heroEl,'heal');
     battleLog(`${item.icon} <span class="log-gold">PHOENIX DOWN! Revived with ${RPG.hp} HP!</span>`);
   }
   updateBattleBars();
@@ -952,10 +1241,14 @@ function useItem(id){
 
 function battleDefend(){
   if(!BATTLE.playerTurn) return;
-  sndBuff();
+  sndShield();
   BATTLE.playerTurn=false;
   setMenuDisabled(true);
   RPG.buffs._defend=true;
+
+  // SHIELD VISUAL EFFECT
+  showShieldEffect();
+
   battleLog(`🛡 <span class="log-gold">Defending! Damage reduced by 50%!</span>`);
   buildMainMenu();
   setTimeout(()=>enemyTurn(),600);
@@ -1064,7 +1357,8 @@ function endBattle(won){
 
 function hideBattle(){
   document.getElementById('rpgBattle').classList.remove('show');
-  // Return to idle music when battle ends
+  // Clean up any shield
+  if(shieldEl){ shieldEl.remove(); shieldEl=null; }
   switchMusic('idle');
   updateRpgHud();
 }
@@ -1095,10 +1389,10 @@ function startBattle(playerPiece, enemyPiece, onWin, onLose){
   buildMainMenu();
   setMenuDisabled(false);
 
-  // ── MUSIC ROUTING ──────────────────────────────────────
-  // Switch to the appropriate battle track based on enemy tier
+  // Flash chessboard bg on battle start
+  setTimeout(()=>flashChessBg(), 100);
+
   switchMusic(battleMusicForTier(data.tier));
-  // ───────────────────────────────────────────────────────
 
   if(data.tier==='ultima') sndUltimaStart();
   else if(data.tier==='boss') sndBossStart();
@@ -1243,13 +1537,12 @@ function doExecute(move,piece,nb,captured,nep,nc){
 
     startBattle(playerPiece, enemyPiece,
       () => {
-        // PLAYER WINS BATTLE
         if(col(piece)==='white'){
           G.capByWhite.push(captured);
           sndCapture(); shakeBoard();
           finishTurn(move,piece,nb,captured,nep,nc);
         } else {
-          G.capByWhite.push(piece); 
+          G.capByWhite.push(piece);
           let defendBoard = nb.map(row=>[...row]);
           defendBoard[move.fr][move.fc] = null;
           defendBoard[move.tr][move.tc] = captured;
@@ -1257,7 +1550,6 @@ function doExecute(move,piece,nb,captured,nep,nc){
           sndCapture(); shakeBoard();
           G.turn = 'white';
           G.moveHistory.push(toNotation(move,piece,false,false) + "(Defended)");
-          
           const lm=getLegalMoves(G.board,'white',G.ep,G.castling);
           const inCheck=isInCheck(G.board,'white',G.ep,G.castling);
           renderBoard();
@@ -1270,7 +1562,6 @@ function doExecute(move,piece,nb,captured,nep,nc){
         updateRpgHud();
       },
       () => {
-        // PLAYER LOSES BATTLE
         if(col(piece)==='white'){
           let failBoard = nb.map(row=>[...row]);
           failBoard[move.tr][move.tc] = captured;
@@ -1413,6 +1704,8 @@ const modeDescs=['Classic chess vs AI with Stockfish engine','⚔ Battle pieces 
 function showModePanel(){
   document.getElementById('modePanel').style.display='flex';
   refreshModeButtons();
+  // FIX: reset music.current so idle plays fresh next interaction
+  music.current = null;
 }
 function hideModePanel(){document.getElementById('modePanel').style.display='none';}
 function refreshModeButtons(){
@@ -1456,12 +1749,7 @@ function showRpgIntro(cb){
     s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*2}s;`;
     starsEl.appendChild(s);
   }
-  const lines=[
-    'THE KINGDOM OF CHESS',
-    'IS UNDER SIEGE...',
-    '♟ YOUR QUEST BEGINS',
-    'DEFEAT THE DARK KING!'
-  ];
+  const lines=['THE KINGDOM OF CHESS','IS UNDER SIEGE...','♟ YOUR QUEST BEGINS','DEFEAT THE DARK KING!'];
   linesEl.innerHTML='';
   heroEl.style.opacity='0';
   sndIntro();
@@ -1512,7 +1800,6 @@ function isOnDiffScreen(){return diffPanelEl().style.display!=='none';}
 function isOnModeScreen(){return modePanelEl().style.display!=='none';}
 function isOnIntro(){return rpgIntroEl().classList.contains('show');}
 
-// All button handlers call getAudio() which triggers idle music on first interaction
 document.getElementById('btn-up').onclick    =()=>{getAudio(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(-1,0);};
 document.getElementById('btn-down').onclick  =()=>{getAudio(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(1,0);};
 document.getElementById('btn-left').onclick  =()=>{getAudio(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(0,-1);};
