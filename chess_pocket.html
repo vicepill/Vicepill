@@ -121,13 +121,11 @@ body::after{
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse at 50% 100%,rgba(100,50,200,.15) 0%,transparent 70%);
 }
-/* Ground line */
 .battle-scene::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,rgba(150,80,255,.4),transparent);
 }
 
-/* floating particles */
 .battle-particle{
   position:absolute;border-radius:50%;pointer-events:none;animation:floatUp 3s infinite;
 }
@@ -189,7 +187,7 @@ body::after{
 .menu-item.disabled{opacity:.3;pointer-events:none;}
 .menu-item .m-icon{font-size:10px;display:block;}
 .menu-item .m-cost{font-size:5px;color:var(--rpg-mp);display:block;}
-.submenu-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+.submenu-row{display:flex;flex-wrap:wrap;gap:3px;}
 .submenu-item{
   padding:3px 5px;background:#0f0a20;border:1px solid #2a1a3a;
   font-size:6px;color:var(--text);cursor:pointer;border-radius:2px;transition:all .12s;
@@ -482,26 +480,76 @@ body::after{
 
 <script>
 // =====================================================
-//  AUDIO ENGINE (WITH BACKGROUND MUSIC FIX)
+//  AUDIO ENGINE — BATTLE MUSIC ROUTING
 // =====================================================
 let audioCtx;
-let bgMusic = null;
 
-function playBgMusic() {
-  if (!bgMusic) {
-    bgMusic = new Audio('idle.mp3');
-    bgMusic.loop = true;
-    bgMusic.volume = 0.35;
+// Three separate Audio objects for each music layer
+const music = {
+  idle:   new Audio('idle.mp3'),
+  battle: new Audio('battle.mp3'),
+  boss:   new Audio('boss.mp3'),
+  ultima: new Audio('ultima.mp3'),
+  current: null
+};
+
+// Configure all tracks
+Object.entries(music).forEach(([key, track]) => {
+  if(track instanceof Audio) {
+    track.loop = true;
+    track.volume = 0.35;
   }
-  if (bgMusic.paused) {
-    bgMusic.play().catch(() => { /* Safe catch for pre-interaction blocks */ });
+});
+
+function switchMusic(trackName) {
+  // If already playing this track, do nothing
+  if(music.current === trackName) return;
+
+  // Fade out and stop whatever is currently playing
+  const prev = music[music.current];
+  if(prev && prev instanceof Audio && !prev.paused) {
+    // Quick fade-out then pause
+    const fadeOut = setInterval(() => {
+      if(prev.volume > 0.03) {
+        prev.volume = Math.max(0, prev.volume - 0.04);
+      } else {
+        prev.pause();
+        prev.currentTime = 0;
+        prev.volume = 0.35;
+        clearInterval(fadeOut);
+      }
+    }, 40);
   }
+
+  music.current = trackName;
+  const next = music[trackName];
+  if(next && next instanceof Audio) {
+    next.volume = 0;
+    next.play().catch(() => {});
+    // Fade in
+    const fadeIn = setInterval(() => {
+      if(next.volume < 0.32) {
+        next.volume = Math.min(0.35, next.volume + 0.04);
+      } else {
+        next.volume = 0.35;
+        clearInterval(fadeIn);
+      }
+    }, 40);
+  }
+}
+
+// Determine which battle music to use based on piece tier
+function battleMusicForTier(tier) {
+  if(tier === 'ultima') return 'ultima';
+  if(tier === 'boss')   return 'boss';
+  return 'battle';
 }
 
 function getAudio(){
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
-  playBgMusic();
+  // Start idle music on first user interaction if nothing is playing
+  if(!music.current) switchMusic('idle');
   return audioCtx;
 }
 
@@ -694,7 +742,7 @@ let BATTLE = {
 };
 
 // =====================================================
-//  RPG BATTLE UI (WITH ACCURATE SPRITES FIX)
+//  RPG BATTLE UI
 // =====================================================
 function battleLog(html){
   const el=document.getElementById('battleLogText');
@@ -1016,6 +1064,8 @@ function endBattle(won){
 
 function hideBattle(){
   document.getElementById('rpgBattle').classList.remove('show');
+  // Return to idle music when battle ends
+  switchMusic('idle');
   updateRpgHud();
 }
 
@@ -1044,6 +1094,11 @@ function startBattle(playerPiece, enemyPiece, onWin, onLose){
   spawnParticles();
   buildMainMenu();
   setMenuDisabled(false);
+
+  // ── MUSIC ROUTING ──────────────────────────────────────
+  // Switch to the appropriate battle track based on enemy tier
+  switchMusic(battleMusicForTier(data.tier));
+  // ───────────────────────────────────────────────────────
 
   if(data.tier==='ultima') sndUltimaStart();
   else if(data.tier==='boss') sndBossStart();
@@ -1160,7 +1215,7 @@ function animateMove(piece,fr,fc,tr,tc,cb){
 function shakeBoard(){boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),300);}
 
 // =====================================================
-//  MOVE LOGIC (WITH FULL DEFENSIVE/OFFENSIVE BATTLE FIX)
+//  MOVE LOGIC
 // =====================================================
 function toNotation(move,piece,inCheck,isMate){
   const f='abcdefgh',ra='87654321',t=typ(piece);
@@ -1190,12 +1245,10 @@ function doExecute(move,piece,nb,captured,nep,nc){
       () => {
         // PLAYER WINS BATTLE
         if(col(piece)==='white'){
-          // Offensive victory
           G.capByWhite.push(captured);
           sndCapture(); shakeBoard();
           finishTurn(move,piece,nb,captured,nep,nc);
         } else {
-          // Defensive victory (Player blocks enemy attack)
           G.capByWhite.push(piece); 
           let defendBoard = nb.map(row=>[...row]);
           defendBoard[move.fr][move.fc] = null;
@@ -1219,7 +1272,6 @@ function doExecute(move,piece,nb,captured,nep,nc){
       () => {
         // PLAYER LOSES BATTLE
         if(col(piece)==='white'){
-          // Offensive failure (Player piece shatters)
           let failBoard = nb.map(row=>[...row]);
           failBoard[move.tr][move.tc] = captured;
           failBoard[move.fr][move.fc] = null;
@@ -1231,7 +1283,6 @@ function doExecute(move,piece,nb,captured,nep,nc){
           updateRpgHud();
           if(G.turn==='black'){G.aiThinking=true;renderBoard();setTimeout(doAIMove,350);}
         } else {
-          // Defensive failure (Enemy successfully breaches and captures)
           G.capByBlack.push(captured);
           sndCapture(); shakeBoard();
           finishTurn(move,piece,nb,captured,nep,nc);
@@ -1452,7 +1503,7 @@ document.getElementById('diffOptions').addEventListener('click',e=>{
 });
 
 // =====================================================
-//  INPUT ROUTING (SAFE AUDIO TRIGGER HANDLERS)
+//  INPUT ROUTING
 // =====================================================
 const diffPanelEl=()=>document.getElementById('diffPanel');
 const modePanelEl=()=>document.getElementById('modePanel');
@@ -1461,19 +1512,20 @@ function isOnDiffScreen(){return diffPanelEl().style.display!=='none';}
 function isOnModeScreen(){return modePanelEl().style.display!=='none';}
 function isOnIntro(){return rpgIntroEl().classList.contains('show');}
 
-document.getElementById('btn-up').onclick    =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(-1,0);};
-document.getElementById('btn-down').onclick  =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(1,0);};
-document.getElementById('btn-left').onclick  =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(0,-1);};
-document.getElementById('btn-right').onclick =()=>{playBgMusic(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(0,1);};
-document.getElementById('btn-a').onclick     =()=>{playBgMusic(); if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
-document.getElementById('btn-x').onclick     =()=>{playBgMusic(); if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
-document.getElementById('btn-b').onclick     =()=>{playBgMusic(); if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
-document.getElementById('btn-y').onclick     =()=>{playBgMusic(); if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
-document.getElementById('btn-start').onclick =()=>{playBgMusic(); if(!BATTLE.active)showModePanel();};
-document.getElementById('btn-select').onclick=()=>{playBgMusic(); if(!BATTLE.active)showModePanel();};
+// All button handlers call getAudio() which triggers idle music on first interaction
+document.getElementById('btn-up').onclick    =()=>{getAudio(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(-1,0);};
+document.getElementById('btn-down').onclick  =()=>{getAudio(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(1,0);};
+document.getElementById('btn-left').onclick  =()=>{getAudio(); if(isOnDiffScreen())diffNav(-1);else if(isOnModeScreen())modeNav(-1);else moveCursor(0,-1);};
+document.getElementById('btn-right').onclick =()=>{getAudio(); if(isOnDiffScreen())diffNav(1);else if(isOnModeScreen())modeNav(1);else moveCursor(0,1);};
+document.getElementById('btn-a').onclick     =()=>{getAudio(); if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
+document.getElementById('btn-x').onclick     =()=>{getAudio(); if(isOnDiffScreen())diffConfirm();else if(isOnModeScreen())modeConfirm();else handleAction();};
+document.getElementById('btn-b').onclick     =()=>{getAudio(); if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
+document.getElementById('btn-y').onclick     =()=>{getAudio(); if(!isOnDiffScreen()&&!isOnModeScreen())handleCancel();};
+document.getElementById('btn-start').onclick =()=>{getAudio(); if(!BATTLE.active)showModePanel();};
+document.getElementById('btn-select').onclick=()=>{getAudio(); if(!BATTLE.active)showModePanel();};
 
 document.addEventListener('keydown',e=>{
-  playBgMusic();
+  getAudio();
   if(isOnIntro()) return;
   if(isOnDiffScreen()){
     if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();diffNav(-1);}
