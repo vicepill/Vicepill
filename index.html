@@ -54,11 +54,11 @@
       const video = document.getElementById('video');
       const audio = document.getElementById('audio');
       const btn = document.getElementById('magitekButton');
-      const MAX_DRIFT = 0.12; // seconds
+      const MAX_DRIFT = 0.12;
 
-      video.muted = true; // video never plays sound
+      video.muted = true;
 
-      // Audio is the master clock; the video follows it.
+
       function sync() {
         if (!audio.paused && !audio.ended) {
           if (Math.abs(video.currentTime - audio.currentTime) > MAX_DRIFT) {
