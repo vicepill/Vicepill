@@ -39,7 +39,7 @@ button:hover{color:#fff;border-color:#fff}
 <script>
 const owner="vicepill";
 const repo="Vicepill";
-const COLOUR_CHANCE=.2; // chance that any given image appears in colour
+const COLOUR_CHANCE=.2; 
 const clock=s=>[s/3600|0,s/60%60|0,s%60].map(n=>String(n).padStart(2,"0")).join(":");
 time.textContent=clock(0);
 let images=[],tracks=[],k=0;
@@ -67,7 +67,7 @@ function next(){
     if(instant){
       nxt.style.transition="none";
       nxt.classList.add("on");
-      nxt.offsetWidth; // flush so the change applies with no fade
+      nxt.offsetWidth; 
       nxt.style.transition="";
     }else{
       nxt.classList.add("on");
