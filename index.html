@@ -35,10 +35,10 @@ function next(){
 start.onclick=async()=>{
   start.remove();
   audio.play();
-  const html=await (await fetch("./")).text();
-  images=[...new DOMParser().parseFromString(html,"text/html").querySelectorAll("a")]
-    .map(a=>a.getAttribute("href"))
-    .filter(h=>/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(h));
+  const owner=location.hostname.split(".")[0];
+  const repo=location.pathname.split("/")[1]||location.hostname;
+  const files=await (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/`)).json();
+  images=files.map(f=>f.name).filter(n=>/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(n)).map(encodeURIComponent);
   if(images.length)next();
 };
 </script>
