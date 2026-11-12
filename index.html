@@ -34,14 +34,15 @@ button:hover{color:#fff;border-color:#fff}
 <div id="grain"></div>
 <div id="snow"></div>
 <div id="hud"><span id="time"></span></div>
-<audio id="audio" src="DM3.mp3" loop></audio>
+<audio id="audio" src="DM3.mp3"></audio>
 <button id="start">ENTER</button>
 <script>
 const owner="vicepill";
 const repo="Vicepill";
 const clock=s=>[s/3600|0,s/60%60|0,s%60].map(n=>String(n).padStart(2,"0")).join(":");
 time.textContent=clock(0);
-let images=[];
+let images=[],tracks=["DM3.mp3"],k=0;
+audio.onended=()=>{k=(k+1)%tracks.length;audio.src=tracks[k];audio.play()};
 const els=[a,b];
 let i=-1,t=0;
 function next(){
@@ -56,7 +57,7 @@ function next(){
 start.onclick=async()=>{
   start.remove();
   audio.play();
-    let s=0;
+  let s=0;
   setInterval(()=>{
     s+=Math.random()<.015?10+Math.random()*600|0:1;
     let t=clock(s);
@@ -64,7 +65,10 @@ start.onclick=async()=>{
     time.textContent=t;
   },1000);
   const files=await (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/`)).json();
-  images=files.map(f=>f.name).filter(n=>/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(n)).map(encodeURIComponent);
+  const names=files.map(f=>f.name);
+  images=names.filter(n=>/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(n)).map(encodeURIComponent);
+  const mp3=names.filter(n=>/\.mp3$/i.test(n)).map(encodeURIComponent);
+  if(mp3.length){tracks=mp3;k=Math.max(0,mp3.indexOf("DM3.mp3"))}
   if(images.length)next();
 };
 </script>
