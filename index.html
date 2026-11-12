@@ -20,7 +20,7 @@ button:hover{color:#fff;border-color:#fff}
 <audio id="audio" src="DM3.mp3" loop></audio>
 <button id="start">ENTER</button>
 <script>
-const images=["1.jpg","2.jpg","3.jpg"];
+let images=[];
 const els=[a,b];
 let i=-1,t=0;
 function next(){
@@ -32,10 +32,14 @@ function next(){
   nxt.src=images[i];
   setTimeout(next,10000+Math.random()*5000);
 }
-start.onclick=()=>{
+start.onclick=async()=>{
   start.remove();
   audio.play();
-  next();
+  const html=await (await fetch("./")).text();
+  images=[...new DOMParser().parseFromString(html,"text/html").querySelectorAll("a")]
+    .map(a=>a.getAttribute("href"))
+    .filter(h=>/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(h));
+  if(images.length)next();
 };
 </script>
 </body>
