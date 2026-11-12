@@ -20,6 +20,8 @@ button:hover{color:#fff;border-color:#fff}
 <audio id="audio" src="DM3.mp3" loop></audio>
 <button id="start">ENTER</button>
 <script>
+const owner="vicepill";
+const repo="Vicepill";
 let images=[];
 const els=[a,b];
 let i=-1,t=0;
@@ -35,8 +37,6 @@ function next(){
 start.onclick=async()=>{
   start.remove();
   audio.play();
-  const owner=location.hostname.split(".")[0];
-  const repo=location.pathname.split("/")[1]||location.hostname;
   const files=await (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/`)).json();
   images=files.map(f=>f.name).filter(n=>/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(n)).map(encodeURIComponent);
   if(images.length)next();
