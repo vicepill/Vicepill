@@ -91,9 +91,24 @@ ms.forEach(m=>m.onclick=()=>setMode(+m.dataset.m));
 let muted=false;
 snd.onclick=()=>{muted=!muted;audio.muted=muted;snd.classList.toggle("off",muted)};
 
-let i=-1,t=0,first=true;
+let t=0,first=true,order=[],last=-1;
+// Shuffle-bag: every image is shown once in random order, then the bag is refilled.
+function refill(){
+  if(order.length)return;
+  const n=images.length;
+  order=[...Array(n).keys()];
+  for(let j=n-1;j>0;j--){const r=Math.random()*(j+1)|0;[order[j],order[r]]=[order[r],order[j]]}
+  // avoid showing the same image twice in a row across rounds
+  if(n>1&&order[n-1]===last)[order[0],order[n-1]]=[order[n-1],order[0]];
+}
+function pick(){
+  refill();
+  last=order.pop();
+  refill();
+  return last;
+}
 function next(){
-  i=(i+1)%images.length;
+  const i=pick();
   const cur=els[t];
   t^=1;
   const nxt=els[t];
@@ -109,7 +124,7 @@ function next(){
     cur.classList.remove("on");
   };
   nxt.src=images[i];
-  preload(images[(i+1)%images.length]);
+  preload(images[order[order.length-1]]);
   setTimeout(next,10000+Math.random()*5000);
 }
 start.onclick=async()=>{
